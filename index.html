@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HVAC CRM - Technicien</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome pour les icônes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Optimisations tactiles */
+        button, a { touch-action: manipulation; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        /* Animation fluide pour la modale */
+        .modal-enter { animation: slideUp 0.3s ease-out forwards; }
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased pb-20">
+
+    <!-- Header -->
+    <header id="main-header" class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-40 flex justify-between items-center transition-colors duration-300">
+        <h1 class="text-xl font-bold flex items-center">
+            <i class="fa-solid fa-snowflake mr-2"></i> 
+            <span id="company-name-display">CRM Froid & Clim</span>
+            <span id="pro-badge" class="hidden bg-yellow-400 text-yellow-900 text-[10px] font-bold px-1.5 py-0.5 rounded ml-2 shadow-sm">PRO</span>
+        </h1>
+        <div class="flex items-center gap-4">
+            <button onclick="afficherParametres()" class="text-white hover:text-gray-200 transition bg-white/20 p-2 rounded-full h-9 w-9 flex items-center justify-center">
+                <i class="fa-solid fa-gear text-lg"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Conteneur Principal -->
+    <main id="app-content" class="p-4"></main>
+
+    <!-- Navigation Basse (Mobile) -->
+    <nav class="fixed bottom-0 w-full z-40 bg-white border-t border-gray-200 flex justify-around p-3 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+        <button onclick="renderDashboard()" id="nav-btn-0" class="nav-btn flex flex-col items-center text-blue-600 transition">
+            <i class="fa-solid fa-list-check text-xl mb-1"></i>
+            <span class="text-xs font-semibold">Interventions</span>
+        </button>
+        <button onclick="renderClients()" id="nav-btn-1" class="nav-btn flex flex-col items-center text-gray-400 hover:text-blue-500 transition">
+            <i class="fa-solid fa-users text-xl mb-1"></i>
+            <span class="text-xs font-semibold">Clients</span>
+        </button>
+        <button onclick="renderRelances()" id="nav-btn-2" class="nav-btn flex flex-col items-center text-gray-400 hover:text-blue-500 relative transition">
+            <i class="fa-brands fa-whatsapp text-xl mb-1"></i>
+            <span class="text-xs font-semibold">Relances</span>
+            <span id="badge-relances" class="absolute top-0 right-2 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center hidden">0</span>
+        </button>
+    </nav>
+
+    <!-- Overlay Modale (Cachée par défaut) -->
+    <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex-col justify-end sm:justify-center items-center">
+        <div id="modal-content" class="bg-white w-full sm:w-96 sm:rounded-xl rounded-t-2xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto transform transition-all">
+            <!-- Le contenu du formulaire sera injecté ici -->
+        </div>
+    </div>
+
+    <!-- Vanilla JavaScript -->
+    <script>
+        // --- DICTIONNAIRE DES THÈMES ---
+        const themes = {
+            blue: { bgMain: 'bg-blue-600', bgHover: 'hover:bg-blue-700', bgLight: 'bg-blue-100', bgLightest: 'bg-blue-50', textMain: 'text-blue-600', textLight: 'text-blue-700' },
+            green: { bgMain: 'bg-green-600', bgHover: 'hover:bg-green-700', bgLight: 'bg-green-100', bgLightest: 'bg-green-50', textMain: 'text-green-600', textLight: 'text-green-700' },
+            red: { bgMain: 'bg-red-600', bgHover: 'hover:bg-red-700', bgLight: 'bg-red-100', bgLightest: 'bg-red-50', textMain: 'text-red-600', textLight: 'text-red-700' },
+            black: { bgMain: 'bg-gray-800', bgHover: 'hover:bg-gray-900', bgLight: 'bg-gray-200', bgLightest: 'bg-gray-100', textMain: 'text-gray-800', textLight: 'text-gray-900' }
+        };
+
+        // Variable globale pour suivre la vue active (0: Dashboard, 1: Clients, 2: Relances)
+        let currentView = 0;
+
+        // --- BASE DE DONNÉES LOCALE ---
+        const initDB = () => {
+            if (!localStorage.getItem('hvac_settings')) {
+                localStorage.setItem('hvac_settings', JSON.stringify({ isPro: false, companyName: 'CRM Froid & Clim', theme: 'blue' }));
+            }
+            if (!localStorage.getItem('hvac_clients')) {
+                localStorage.setItem('hvac_clients', JSON.stringify([
+                    { id: 1, nom: "Boulangerie Le Pain Doré", tel: "2250102030405", adresse: "Zone 4, Abidjan", type: "B2B" },
+                    { id: 2, nom: "M. Kouamé", tel: "2250506070809", adresse: "Cocody Riviera", type: "B2C" }
+                ]));
+                localStorage.setItem('hvac_equipements', JSON.stringify([
+                    { id: 101, clientId: 1, type: "Chambre Froide", marque: "Carrier", frequenceMois: 3 },
+                    { id: 102, clientId: 2, type: "Split Mural 1.5 CV", marque: "Daikin", frequenceMois: 6 }
+                ]));
+                localStorage.setItem('hvac_interventions', JSON.stringify([
+                    { id: 1001, equipementId: 101, datePassage: "2026-06-10", statut: "Terminé", notes: "Recharge Gaz." }
+                ]));
+                localStorage.setItem('hvac_relances', JSON.stringify([]));
+            }
+        };
+
+        const getDB = (table) => {
+            const data = localStorage.getItem(`hvac_${table}`);
+            if (data) return JSON.parse(data);
+            if (table === 'settings') return { isPro: false, companyName: 'CRM Froid & Clim', theme: 'blue' };
+            return [];
+        };
+        const saveDB = (table, data) => localStorage.setItem(`hvac_${table}`, JSON.stringify(data));
+
+        // --- GESTION DE L'UI GLOBALE ET DES THÈMES ---
+        const updateAppUI = () => {
+            const settings = getDB('settings');
+            const th = themes[settings.theme] || themes['blue'];
+            
+            // Mise à jour du Header
+            document.getElementById('company-name-display').innerText = settings.companyName;
+            
+            // Affichage du badge PRO
+            const badge = document.getElementById('pro-badge');
+            if (settings.isPro) badge.classList.remove('hidden');
+            else badge.classList.add('hidden');
+
+            // Changement de la couleur du Header
+            const header = document.getElementById('main-header');
+            header.classList.remove('bg-blue-600', 'bg-green-600', 'bg-red-600', 'bg-gray-800');
+            header.classList.add(th.bgMain);
+
+            // Mise à jour de la Nav
+            updateNav(currentView);
+
+            // Re-render de la vue active pour appliquer les couleurs
+            if (currentView === 1) renderClients();
+            else if (currentView === 2) renderRelances();
+            else renderDashboard();
+        };
+
+        const updateNav = (activeIndex) => {
+            const btns = document.querySelectorAll('.nav-btn');
+            const settings = getDB('settings');
+            const th = themes[settings.theme] || themes['blue'];
+            
+            btns.forEach((btn, idx) => {
+                // Nettoyage des anciennes classes de couleur
+                btn.className = btn.className.replace(/text-(blue|green|red|gray)-\d+/g, '');
+                
+                if (idx === activeIndex) {
+                    btn.className = `nav-btn flex flex-col items-center ${th.textMain} transition`;
+                } else {
+                    btn.className = `nav-btn flex flex-col items-center text-gray-400 hover:${th.textMain} relative transition`;
+                }
+            });
+        };
+
+        // --- GESTION DE LA MODALE ---
+        const overlay = document.getElementById('modal-overlay');
+        const modalContent = document.getElementById('modal-content');
+
+        const ouvrirModal = (html) => {
+            modalContent.innerHTML = html;
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+            modalContent.classList.add('modal-enter');
+        };
+
+        const fermerModal = () => {
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+            modalContent.classList.remove('modal-enter');
+        };
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) fermerModal();
+        });
+
+
+        // --- SYSTÈME FREEMIUM (PAYWALL) ---
+        const afficherPaywall = () => {
+            const waMsg = encodeURIComponent("Bonjour, je souhaite payer les 10 000 FCFA pour obtenir mon code d'activation PRO pour le CRM Froid & Clim.");
+            const waLink = `https://wa.me/2250506509722?text=${waMsg}`;
+            
+            const html = `
+                <div class="p-6 text-center">
+                    <div class="w-16 h-16 bg-yellow-100 text-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl shadow-inner">
+                        <i class="fa-solid fa-crown"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Passez à la version PRO</h2>
+                    <p class="text-gray-600 mb-6 text-sm leading-relaxed">Vous avez atteint la limite de 3 clients de la version gratuite.<br>Débloquez l'ajout <b>illimité</b> et la <b>personnalisation</b> (Nom, Couleurs) de votre CRM !</p>
+
+                    <a href="${waLink}" target="_blank" class="block w-full bg-[#25D366] text-white font-bold py-3.5 rounded-lg shadow-md mb-6 flex justify-center items-center gap-2 hover:bg-green-600 transition">
+                        <i class="fa-brands fa-whatsapp text-2xl"></i> Obtenir mon code PRO
+                    </a>
+
+                    <div class="border-t border-gray-200 pt-5 mt-2 bg-gray-50 -mx-6 px-6 pb-2">
+                        <label class="block text-sm font-bold text-gray-700 mb-2 text-left">J'ai déjà un code d'activation :</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="pro-code" class="flex-1 border border-gray-300 rounded-lg p-3 outline-none focus:border-yellow-500 font-mono text-sm uppercase" placeholder="Ex: PRO-XXXX-XXXX">
+                            <button onclick="validerCodePro()" class="bg-gray-800 text-white px-5 rounded-lg font-bold hover:bg-black transition">Valider</button>
+                        </div>
+                        <p id="pro-error" class="text-red-500 text-xs text-left mt-2 hidden font-semibold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Code invalide. Veuillez réessayer.</p>
+                    </div>
+                    
+                    <button onclick="fermerModal()" class="mt-5 text-gray-400 hover:text-gray-600 text-sm font-semibold transition">Plus tard</button>
+                </div>
+            `;
+            ouvrirModal(html);
+        };
+
+        const validerCodePro = () => {
+            const input = document.getElementById('pro-code').value.trim().toUpperCase();
+            if (input === 'PRO-HVAC-2026') {
+                const settings = getDB('settings');
+                settings.isPro = true;
+                saveDB('settings', settings);
+                
+                alert("🎉 Félicitations ! Votre CRM est maintenant débloqué en version PRO.");
+                fermerModal();
+                updateAppUI();
+                
+                // Si on venait de la création de client, on réouvre le formulaire
+                if (currentView === 1) afficherFormClient();
+            } else {
+                document.getElementById('pro-error').classList.remove('hidden');
+            }
+        };
+
+
+        // --- PARAMÈTRES (RÉSERVÉS AUX PRO) ---
+        const afficherParametres = () => {
+            const settings = getDB('settings');
+            
+            if (!settings.isPro) {
+                afficherPaywall();
+                return;
+            }
+
+            const html = `
+                <div class="p-4 bg-gray-50 border-b flex justify-between items-center sticky top-0">
+                    <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-gear mr-2"></i>Paramètres PRO</h3>
+                    <button onclick="fermerModal()" class="text-gray-500 text-2xl px-2">&times;</button>
+                </div>
+                <form onsubmit="sauvegarderParametres(event)" class="p-5 flex flex-col gap-5">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Nom de l'entreprise</label>
+                        <input type="text" id="param-nom" required value="${settings.companyName}" class="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-gray-500 transition">
+                        <p class="text-xs text-gray-400 mt-1">S'affichera dans l'en-tête de l'application.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-3">Couleur de l'interface</label>
+                        <div class="flex gap-4 justify-around">
+                            <!-- Option Blue -->
+                            <label class="flex flex-col items-center gap-1 cursor-pointer">
+                                <input type="radio" name="param-theme" value="blue" ${settings.theme === 'blue' ? 'checked' : ''} class="peer sr-only">
+                                <div class="w-10 h-10 bg-blue-600 rounded-full border-2 border-transparent peer-checked:border-gray-800 peer-checked:ring-4 peer-checked:ring-blue-100 transition shadow-sm"></div>
+                            </label>
+                            <!-- Option Green -->
+                            <label class="flex flex-col items-center gap-1 cursor-pointer">
+                                <input type="radio" name="param-theme" value="green" ${settings.theme === 'green' ? 'checked' : ''} class="peer sr-only">
+                                <div class="w-10 h-10 bg-green-600 rounded-full border-2 border-transparent peer-checked:border-gray-800 peer-checked:ring-4 peer-checked:ring-green-100 transition shadow-sm"></div>
+                            </label>
+                            <!-- Option Red -->
+                            <label class="flex flex-col items-center gap-1 cursor-pointer">
+                                <input type="radio" name="param-theme" value="red" ${settings.theme === 'red' ? 'checked' : ''} class="peer sr-only">
+                                <div class="w-10 h-10 bg-red-600 rounded-full border-2 border-transparent peer-checked:border-gray-800 peer-checked:ring-4 peer-checked:ring-red-100 transition shadow-sm"></div>
+                            </label>
+                            <!-- Option Black -->
+                            <label class="flex flex-col items-center gap-1 cursor-pointer">
+                                <input type="radio" name="param-theme" value="black" ${settings.theme === 'black' ? 'checked' : ''} class="peer sr-only">
+                                <div class="w-10 h-10 bg-gray-800 rounded-full border-2 border-transparent peer-checked:border-gray-400 peer-checked:ring-4 peer-checked:ring-gray-200 transition shadow-sm"></div>
+                            </label>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-gray-900 text-white font-bold py-3.5 rounded-lg mt-2 shadow-md hover:bg-black transition">Sauvegarder les modifications</button>
+                </form>
+            `;
+            ouvrirModal(html);
+        };
+
+        const sauvegarderParametres = (e) => {
+            e.preventDefault();
+            const settings = getDB('settings');
+            settings.companyName = document.getElementById('param-nom').value.trim() || 'CRM Froid & Clim';
+            settings.theme = document.querySelector('input[name="param-theme"]:checked').value;
+            saveDB('settings', settings);
+            fermerModal();
+            updateAppUI();
+        };
+
+
+        // --- FORMULAIRES MÉTIER ---
+        const afficherFormClient = () => {
+            const clients = getDB('clients');
+            const settings = getDB('settings');
+            const th = themes[settings.theme] || themes['blue'];
+
+            // INTERCEPTION FREEMIUM
+            if (clients.length >= 3 && !settings.isPro) {
+                afficherPaywall();
+                return;
+            }
+
+            const html = `
+                <div class="p-4 bg-gray-50 border-b flex justify-between items-center sticky top-0">
+                    <h3 class="text-lg font-bold text-gray-800">Ajouter un Client</h3>
+                    <button onclick="fermerModal()" class="text-gray-500 text-2xl px-2">&times;</button>
+                </div>
+                <form onsubmit="sauvegarderClient(event)" class="p-5 flex flex-col gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Nom complet / Raison Sociale *</label>
+                        <input type="text" id="cli-nom" required class="w-full border border-gray-300 rounded-lg p-3 bg-white focus:border-gray-500 outline-none" placeholder="Ex: Entreprise S.A">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Téléphone (WhatsApp) *</label>
+                        <input type="tel" id="cli-tel" required class="w-full border border-gray-300 rounded-lg p-3 bg-white focus:border-gray-500 outline-none" placeholder="Ex: 22501020304">
+                        <p class="text-xs text-gray-500 mt-1">Inclure l'indicatif sans le '+' pour WhatsApp.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Adresse locale *</label>
+                        <input type="text" id="cli-adresse" required class="w-full border border-gray-300 rounded-lg p-3 bg-white outline-none" placeholder="Ex: Plateau, Rue du Commerce">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Catégorie</label>
+                        <select id="cli-type" class="w-full border border-gray-300 rounded-lg p-3 bg-white outline-none">
+                            <option value="B2C">Particulier (B2C)</option>
+                            <option value="B2B">Professionnel (B2B)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full ${th.bgMain} text-white font-bold py-3 rounded-lg mt-2 shadow-md transition">Enregistrer le client</button>
+                </form>
+            `;
+            ouvrirModal(html);
+        };
+
+        const sauvegarderClient = (e) => {
+            e.preventDefault();
+            const clients = getDB('clients');
+            const nouveauClient = {
+                id: Date.now(),
+                nom: document.getElementById('cli-nom').value,
+                tel: document.getElementById('cli-tel').value.replace(/\s+/g, ''),
+                adresse: document.getElementById('cli-adresse').value,
+                type: document.getElementById('cli-type').value
+            };
+            clients.push(nouveauClient);
+            saveDB('clients', clients);
+            fermerModal();
+            renderClients(); 
+        };
+
+        const afficherFormEquipement = (clientId) => {
+            const settings = getDB('settings');
+            const th = themes[settings.theme] || themes['blue'];
+
+            const html = `
+                <div class="p-4 bg-gray-50 border-b flex justify-between items-center sticky top-0">
+                    <h3 class="text-lg font-bold text-gray-800">Nouvel Équipement</h3>
+                    <button onclick="fermerModal()" class="text-gray-500 text-2xl px-2">&times;</button>
+                </div>
+                <form onsubmit="sauvegarderEquipement(event, ${clientId})" class="p-5 flex flex-col gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Type d'appareil *</label>
+                        <select id="eq-type" required class="w-full border border-gray-300 rounded-lg p-3 bg-white outline-none">
+                            <option value="Split Mural">Split Mural</option>
+                            <option value="Armoire">Armoire de Climatisation</option>
+                            <option value="Cassette">Cassette</option>
+                            <option value="VRV / DRV">Système VRV / DRV</option>
+                            <option value="Chambre Froide">Chambre Froide</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Marque *</label>
+                        <input type="text" id="eq-marque" required class="w-full border border-gray-300 rounded-lg p-3 bg-white outline-none" placeholder="Ex: Daikin, Carrier, LG...">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Fréquence d'entretien *</label>
+                        <select id="eq-freq" class="w-full border border-gray-300 rounded-lg p-3 bg-white outline-none">
+                            <option value="3">Tous les 3 mois (Froid Industriel)</option>
+                            <option value="6">Tous les 6 mois (Standard B2B)</option>
+                            <option value="12" selected>Tous les 12 mois (Standard B2C)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full ${th.bgMain} text-white font-bold py-3 rounded-lg mt-2 shadow-md transition">Ajouter l'équipement</button>
+                </form>
+            `;
+            ouvrirModal(html);
+        };
+
+        const sauvegarderEquipement = (e, clientId) => {
+            e.preventDefault();
+            const equipements = getDB('equipements');
+            const nouvelEq = {
+                id: Date.now(),
+                clientId: clientId,
+                type: document.getElementById('eq-type').value,
+                marque: document.getElementById('eq-marque').value,
+                frequenceMois: parseInt(document.getElementById('eq-freq').value)
+            };
+            equipements.push(nouvelEq);
+            saveDB('equipements', equipements);
+            fermerModal();
+            renderClients(); 
+        };
+
+        // --- MOTEUR DE RÈGLES ---
+        const genererRelance = (equipementId, datePassage) => {
+            const equipements = getDB('equipements');
+            const equipement = equipements.find(e => e.id === equipementId);
+            if (!equipement) return;
+
+            const dateIntervention = new Date(datePassage);
+            dateIntervention.setMonth(dateIntervention.getMonth() + equipement.frequenceMois);
+            
+            const dateRelance = new Date(dateIntervention);
+            dateRelance.setDate(dateRelance.getDate() - 15);
+
+            const relances = getDB('relances');
+            relances.push({
+                id: Date.now(),
+                equipementId: equipementId,
+                dateEcheance: dateIntervention.toISOString().split('T')[0],
+                dateDeclenchement: dateRelance.toISOString().split('T')[0],
+                statut: "En attente"
+            });
+            saveDB('relances', relances);
+            updateBadge();
+        };
+
+
+        // --- VUES PRINCIPALES ---
+        const content = document.getElementById('app-content');
+
+        const renderDashboard = () => {
+            currentView = 0;
+            updateNav(0);
+            const clients = getDB('clients');
+            const equipements = getDB('equipements');
+            
+            const settings = getDB('settings');
+            const th = themes[settings.theme] || themes['blue'];
+            
+            let html = `
+                <div class="mb-6 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Parc Actif</h2>
+                        <p class="text-sm text-gray-500">Prêts pour la maintenance</p>
+                    </div>
+                    <button onclick="afficherFormClient()" class="${th.bgLight} ${th.textMain} h-10 w-10 flex items-center justify-center rounded-full shadow-sm transition">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+            `;
+
+            if (equipements.length === 0) {
+                html += `
+                    <div class="text-center mt-10 bg-white p-6 rounded-xl border border-dashed border-gray-300">
+                        <i class="fa-solid fa-toolbox text-4xl text-gray-300 mb-3"></i>
+                        <p class="text-gray-500 mb-4">Aucun équipement dans le parc.</p>
+                        <button onclick="afficherFormClient()" class="${th.bgMain} text-white px-4 py-2 rounded-lg text-sm font-semibold">Commencer par ajouter un client</button>
+                    </div>`;
+            }
+
+            equipements.forEach(eq => {
+                const client = clients.find(c => c.id === eq.clientId);
+                if(client) {
+                    html += `
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <h3 class="font-bold text-lg text-gray-800">${client.nom}</h3>
+                                    <p class="text-sm text-gray-500"><i class="fa-solid fa-location-dot w-4 text-center"></i> ${client.adresse}</p>
+                                </div>
+                                <span class="${th.bgLightest} ${th.textLight} text-xs px-2 py-1 rounded font-bold">${eq.type}</span>
+                            </div>
+                            <div class="bg-gray-50 p-2 rounded mt-2 text-sm text-gray-600 mb-3 border border-gray-100">
+                                <strong>Marque:</strong> ${eq.marque} | <strong>Cycle:</strong> ${eq.frequenceMois} mois
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="cloturerIntervention(${eq.id})" class="w-full bg-[#25D366] text-white py-2.5 rounded-lg font-bold shadow-sm hover:bg-green-600 transition flex items-center justify-center">
+                                    <i class="fa-solid fa-check-circle mr-2"></i> Valider l'entretien
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            content.innerHTML = html;
+        };
+
+        const cloturerIntervention = (equipementId) => {
+            const dateJour = new Date().toISOString().split('T')[0];
+            const interventions = getDB('interventions');
+            
+            interventions.push({
+                id: Date.now(),
+                equipementId: equipementId,
+                datePassage: dateJour,
+                statut: "Terminé",
+                notes: "Entretien préventif standard."
+            });
+            
+            saveDB('interventions', interventions);
+            genererRelance(equipementId, dateJour);
+            
+            alert("✅ Entretien validé ! La date de la prochaine relance a été programmée automatiquement.");
+            renderDashboard();
+        };
+
+        const renderClients = () => {
+            currentView = 1;
+            updateNav(1);
+            const clients = getDB('clients');
+            const equipements = getDB('equipements');
+            
+            const settings = getDB('settings');
+            const th = themes[settings.theme] || themes['blue'];
+
+            let html = `
+                <div class="mb-6 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Répertoire</h2>
+                        <p class="text-sm text-gray-500">${clients.length} client(s) actif(s)</p>
+                    </div>
+                    <button onclick="afficherFormClient()" class="${th.bgMain} text-white text-sm px-3 py-2 rounded-lg shadow-sm font-semibold">
+                        <i class="fa-solid fa-user-plus mr-1"></i> Nouveau
+                    </button>
+                </div>
+            `;
+
+            if (clients.length === 0) {
+                html += `<p class="text-gray-500 text-center mt-10 italic">Aucun client enregistré pour le moment.</p>`;
+            }
+
+            clients.forEach(c => {
+                const clientEquips = equipements.filter(e => e.clientId === c.id);
+                html += `
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4 overflow-hidden relative">
+                        <div class="absolute top-0 right-0 ${c.type === 'B2B' ? 'bg-purple-500' : 'bg-orange-400'} text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase">
+                            ${c.type}
+                        </div>
+                        <h3 class="font-bold text-lg text-gray-800 pr-10">${c.nom}</h3>
+                        <div class="mt-2 space-y-1">
+                            <p class="text-sm text-gray-600"><i class="fa-brands fa-whatsapp w-5 text-green-500"></i> <a href="tel:+${c.tel}" class="${th.textMain} font-semibold">${c.tel}</a></p>
+                            <p class="text-sm text-gray-500"><i class="fa-solid fa-location-dot w-5 text-gray-400"></i> ${c.adresse}</p>
+                        </div>
+                        
+                        <div class="mt-4 pt-3 border-t border-dashed border-gray-200">
+                            <h4 class="text-xs font-bold text-gray-400 uppercase mb-2">Parc Matériel (${clientEquips.length})</h4>
+                            <div class="space-y-1 mb-2">
+                                ${clientEquips.map(e => `
+                                    <div class="text-xs bg-gray-50 p-2 rounded flex justify-between items-center border border-gray-100">
+                                        <span class="font-semibold text-gray-700">${e.type} <span class="font-normal text-gray-500">(${e.marque})</span></span> 
+                                        <span class="text-[10px] ${th.bgLightest} ${th.textLight} px-1.5 py-0.5 rounded font-bold"><i class="fa-solid fa-rotate mr-1"></i>${e.frequenceMois}m</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <button onclick="afficherFormEquipement(${c.id})" class="w-full text-sm ${th.textMain} font-semibold py-2 ${th.bgLightest} rounded transition mt-1">
+                                + Ajouter un équipement
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            content.innerHTML = html;
+        };
+
+        const renderRelances = () => {
+            currentView = 2;
+            updateNav(2);
+            const relances = getDB('relances').filter(r => r.statut === "En attente");
+            const equipements = getDB('equipements');
+            const clients = getDB('clients');
+
+            let html = `
+                <div class="mb-6 flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-800">Relances WhatsApp</h2>
+                </div>
+                ${relances.length === 0 ? `
+                    <div class="text-center mt-10">
+                        <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 text-green-500 text-2xl shadow-sm">
+                            <i class="fa-solid fa-check"></i>
+                        </div>
+                        <p class="text-gray-500 font-medium">Vous êtes à jour !</p>
+                        <p class="text-sm text-gray-400 mt-1">Aucune relance en attente.</p>
+                    </div>` 
+                : ''}
+            `;
+
+            relances.forEach(rel => {
+                const eq = equipements.find(e => e.id === rel.equipementId);
+                const client = clients.find(c => c.id === eq.clientId);
+                if(!client || !eq) return;
+                
+                let message = "";
+                if(client.type === "B2C") {
+                    message = `Bonjour ${client.nom} ! 👋\n\nVotre technicien vous informe que votre ${eq.type} a besoin de son entretien périodique le ${rel.dateEcheance}.\n\n🦠 Le saviez-vous ? Un filtre non nettoyé accumule des bactéries. Un entretien régulier protège vos poumons et assainit votre intérieur.\n\nSouhaitez-vous fixer un rendez-vous cette semaine ? Répondez OUI ! 🔧`;
+                } else {
+                    message = `Bonjour ${client.nom},\n\nL'entretien préventif de votre équipement ${eq.type} arrive à échéance le ${rel.dateEcheance}.\n\n⚡ Un appareil encrassé consomme jusqu'à 30% d'électricité en plus. Cet entretien permet de diviser le risque de panne par 3 et de réduire votre facture.\n\nPouvons-nous valider notre passage ? 📅`;
+                }
+
+                const waLink = `https://wa.me/${client.tel}?text=${encodeURIComponent(message)}`;
+
+                html += `
+                    <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-l-green-500 mb-4 border-y border-r border-gray-100">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="font-bold text-gray-800">${client.nom}</h3>
+                                <p class="text-xs text-gray-500">${eq.type} (${eq.marque})</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-[10px] uppercase font-bold text-gray-400 block mb-0.5">Échéance</span>
+                                <span class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded font-bold">${rel.dateEcheance}</span>
+                            </div>
+                        </div>
+                        <a href="${waLink}" target="_blank" onclick="marquerRelanceFaite(${rel.id})" class="mt-3 block w-full text-center bg-[#25D366] text-white py-2.5 rounded-lg font-bold shadow-md hover:bg-green-600 transition flex items-center justify-center">
+                            <i class="fa-brands fa-whatsapp text-lg mr-2"></i> Envoyer le message
+                        </a>
+                    </div>
+                `;
+            });
+
+            content.innerHTML = html;
+        };
+
+        const marquerRelanceFaite = (relanceId) => {
+            const relances = getDB('relances');
+            const index = relances.findIndex(r => r.id === relanceId);
+            if (index > -1) {
+                relances[index].statut = "Envoyé";
+                saveDB('relances', relances);
+                setTimeout(() => {
+                    renderRelances();
+                    updateBadge();
+                }, 1000); 
+            }
+        };
+
+        const updateBadge = () => {
+            const pending = getDB('relances').filter(r => r.statut === "En attente").length;
+            const badge = document.getElementById('badge-relances');
+            if (pending > 0) {
+                badge.innerText = pending;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        };
+
+        // --- INITIALISATION ---
+        initDB();
+        updateAppUI(); // Initialise les thèmes et affiche le Dashboard
+        updateBadge();
+
+    </script>
+</body>
+</html>
