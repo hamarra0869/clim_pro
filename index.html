@@ -61,8 +61,8 @@
     <!-- Navigation Basse (Mobile) -->
     <nav class="fixed bottom-0 w-full z-40 bg-white border-t border-gray-200 flex justify-around p-3 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
         <button onclick="renderDashboard()" id="nav-btn-0" class="nav-btn flex flex-col items-center text-blue-600 transition">
-            <i class="fa-solid fa-list-check text-xl mb-1"></i>
-            <span class="text-xs font-semibold">Interventions</span>
+            <i class="fa-solid fa-house text-xl mb-1"></i>
+            <span class="text-xs font-semibold">Accueil</span>
         </button>
         <button onclick="renderClients()" id="nav-btn-1" class="nav-btn flex flex-col items-center text-gray-400 hover:text-blue-500 transition">
             <i class="fa-solid fa-users text-xl mb-1"></i>
@@ -194,14 +194,83 @@
         };
 
 
+        // --- LOGIQUE DU TUTORIEL FLASHCARDS ---
+        let currentFlashcardStep = 0;
+        const flashcardSteps = [
+            {
+                title: 'Étape 1',
+                text: 'Enregistrez un client avec son numéro WhatsApp.',
+                icon: 'fa-user'
+            },
+            {
+                title: 'Étape 2',
+                text: 'Associez-lui un équipement (ex: Split, 12 mois).',
+                icon: 'fa-toolbox'
+            },
+            {
+                title: 'Étape 3',
+                text: 'L\'application prépare vos messages de relance automatiques !',
+                icon: 'fa-whatsapp'
+            }
+        ];
+
+        const lancerTutorielFlashcards = () => {
+            currentFlashcardStep = 0;
+            renderCurrentFlashcard();
+        };
+
+        const renderCurrentFlashcard = () => {
+            const step = flashcardSteps[currentFlashcardStep];
+            const settings = getDB('settings');
+            const th = themes[settings.theme] || themes['blue'];
+
+            let dots = '';
+            for(let i = 0; i < flashcardSteps.length; i++) {
+                dots += `<div class="w-2.5 h-2.5 rounded-full transition-colors ${i === currentFlashcardStep ? th.bgMain : 'bg-gray-200'}"></div>`;
+            }
+
+            const isLast = currentFlashcardStep === flashcardSteps.length - 1;
+
+            const html = `
+                <div class="p-4 bg-gray-50 border-b flex justify-between items-center sticky top-0">
+                    <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-circle-question mr-2 text-gray-400"></i>Comment ça marche ?</h3>
+                    <button onclick="fermerModal()" class="text-gray-500 text-2xl px-2">&times;</button>
+                </div>
+                <div class="p-6 text-center">
+                    <div class="w-20 h-20 ${th.bgLightest} ${th.textMain} rounded-full flex items-center justify-center mx-auto mb-5 text-4xl shadow-inner">
+                        <i class="fa-solid ${step.icon}"></i>
+                    </div>
+                    <span class="text-xs font-extrabold uppercase tracking-widest text-gray-400 mb-1 block">${step.title}</span>
+                    <p class="text-gray-700 mb-8 text-sm leading-relaxed">${step.text}</p>
+                    
+                    <div class="flex justify-center gap-2.5 mb-8">
+                        ${dots}
+                    </div>
+
+                    <button onclick="nextFlashcardStep()" class="w-full ${th.bgMain} text-white font-bold py-3.5 rounded-xl shadow-md hover:opacity-95 transition active:scale-95">
+                        ${isLast ? "J'ai compris !" : "Suivant"}
+                    </button>
+                </div>
+            `;
+            ouvrirModal(html);
+        };
+
+        const nextFlashcardStep = () => {
+            if (currentFlashcardStep < flashcardSteps.length - 1) {
+                currentFlashcardStep++;
+                renderCurrentFlashcard();
+            } else {
+                fermerModal();
+            }
+        };
+
+
         // --- BASE DE DONNÉES LOCALE (NETTOYÉE) ---
         const initDB = () => {
             if (!localStorage.getItem('hvac_settings')) {
-                // Nouveau nom orienté bénéfice
                 localStorage.setItem('hvac_settings', JSON.stringify({ isPro: true, companyName: 'Suivi Maintenance CVC', theme: 'blue' }));
             }
             if (!localStorage.getItem('hvac_clients')) {
-                // Base de données TOTALEMENT vierge pour la version Prod
                 localStorage.setItem('hvac_clients', JSON.stringify([]));
                 localStorage.setItem('hvac_equipements', JSON.stringify([]));
                 localStorage.setItem('hvac_interventions', JSON.stringify([]));
@@ -468,7 +537,7 @@
             renderClients(); 
         };
 
-        // --- NOUVEAU : FONCTIONNALITÉS CRUD (ÉDITION / SUPPRESSION) ---
+        // --- FONCTIONNALITÉS CRUD (ÉDITION / SUPPRESSION) ---
         const afficherModaleEditionClient = (clientId) => {
             const settings = getDB('settings');
             const th = themes[settings.theme] || themes['blue'];
@@ -582,7 +651,6 @@
             saveDB('relances', relances);
             saveDB('interventions', interventions);
 
-            // Actualise la modale sans la fermer
             afficherModaleEditionClient(clientId);
             updateBadge();
         };
@@ -595,11 +663,9 @@
             let relances = getDB('relances');
             let interventions = getDB('interventions');
 
-            // Identifier tous les équipements du client
             const clientEquips = equipements.filter(e => e.clientId === clientId);
             const equipIds = clientEquips.map(e => e.id);
 
-            // Suppression en cascade
             relances = relances.filter(r => !equipIds.includes(r.equipementId));
             interventions = interventions.filter(i => !equipIds.includes(i.equipementId));
             equipements = equipements.filter(e => e.clientId !== clientId);
@@ -644,59 +710,138 @@
         // --- VUES PRINCIPALES ---
         const content = document.getElementById('app-content');
 
+        // --- PAGE D'ACCUEIL CHALEUREUSE & HUBS D'ACTIONS ---
         const renderDashboard = () => {
             currentView = 0;
             updateNav(0);
             const clients = getDB('clients');
             const equipements = getDB('equipements');
+            const relances = getDB('relances').filter(r => r.statut === "En attente");
             const settings = getDB('settings');
             const th = themes[settings.theme] || themes['blue'];
-            
+
+            // Salutation contextuelle
+            const heure = new Date().getHours();
+            let salutation = "Bonjour";
+            if (heure >= 12 && heure < 18) salutation = "Bon après-midi";
+            else if (heure >= 18 || heure < 5) salutation = "Bonsoir";
+
+            // Date formatée en français
+            const dateOption = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            const dateFormatee = new Date().toLocaleDateString('fr-FR', dateOption);
+            const dateCapitalisee = dateFormatee.charAt(0).toUpperCase() + dateFormatee.slice(1);
+
             let html = `
-                <div class="mb-6 flex justify-between items-center">
-                    <div>
-                        <h2 class="text-2xl font-bold text-gray-800">Parc Actif</h2>
-                        <p class="text-sm text-gray-500">Prêts pour la maintenance</p>
+                <!-- En-tête Chaleureux & Salutation -->
+                <div class="mb-6 bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-gray-400 block mb-0.5">
+                                <i class="fa-regular fa-calendar mr-1"></i>${dateCapitalisee}
+                            </span>
+                            <h2 class="text-2xl font-extrabold text-gray-800">${salutation} ! 👋</h2>
+                        </div>
+                        <div class="w-12 h-12 ${th.bgLightest} ${th.textMain} rounded-2xl flex items-center justify-center text-2xl shadow-inner">
+                            <i class="fa-solid fa-screwdriver-wrench"></i>
+                        </div>
                     </div>
-                    <button onclick="renderClients()" class="${th.bgLight} ${th.textMain} h-10 w-10 flex items-center justify-center rounded-full shadow-sm transition">
-                        <i class="fa-solid fa-plus"></i>
-                    </button>
+                    <p class="text-sm text-gray-500 mt-2">Prêt à organiser vos maintenances aujourd'hui ?</p>
                 </div>
             `;
 
-            if (equipements.length === 0) {
+            // SI LA BASE EST VIDE : Empty State Empathique & Guidé
+            if (clients.length === 0) {
                 html += `
-                    <div class="text-center mt-10 bg-white p-6 rounded-xl border border-dashed border-gray-300">
-                        <i class="fa-solid fa-toolbox text-4xl text-gray-300 mb-3"></i>
-                        <p class="text-gray-500 mb-4">Aucun équipement dans le parc.</p>
-                        <button onclick="renderClients()" class="${th.bgMain} text-white px-4 py-2 rounded-lg text-sm font-semibold">Allez dans "Clients" pour commencer</button>
-                    </div>`;
-            }
-
-            equipements.forEach(eq => {
-                const client = clients.find(c => c.id === eq.clientId);
-                if(client) {
-                    html += `
-                        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4">
-                            <div class="flex justify-between items-start mb-2">
-                                <div>
-                                    <h3 class="font-bold text-lg text-gray-800">${client.nom}</h3>
-                                    <p class="text-sm text-gray-500"><i class="fa-solid fa-location-dot w-4 text-center"></i> ${client.adresse}</p>
-                                </div>
-                                <span class="${th.bgLightest} ${th.textLight} text-xs px-2 py-1 rounded font-bold">${eq.type}</span>
-                            </div>
-                            <div class="bg-gray-50 p-2 rounded mt-2 text-sm text-gray-600 mb-3 border border-gray-100">
-                                <strong>Marque:</strong> ${eq.marque} | <strong>Cycle:</strong> ${eq.frequenceMois} mois
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="cloturerIntervention(${eq.id})" class="w-full bg-[#25D366] text-white py-2.5 rounded-lg font-bold shadow-sm hover:bg-green-600 transition flex items-center justify-center">
-                                    <i class="fa-solid fa-check-circle mr-2"></i> Valider l'entretien
-                                </button>
-                            </div>
+                    <div class="bg-gradient-to-b from-white to-gray-50 p-6 rounded-2xl border border-gray-200 shadow-sm text-center my-4">
+                        <div class="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl shadow-inner">
+                            <i class="fa-solid fa-toolbox"></i>
                         </div>
-                    `;
+                        
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">Votre carnet digital est prêt !</h3>
+                        <p class="text-gray-500 text-sm leading-relaxed mb-6 max-w-xs mx-auto">
+                            Commencez par ajouter votre premier client pour planifier automatiquement vos relances d'entretien CVC.
+                        </p>
+
+                        <!-- CTA Principal -->
+                        <button onclick="afficherFormClient()" class="w-full ${th.bgMain} text-white font-bold py-3.5 px-6 rounded-xl shadow-md hover:opacity-95 transition active:scale-95 flex items-center justify-center gap-2 mb-3">
+                            <i class="fa-solid fa-user-plus text-lg"></i>
+                            <span>Ajouter mon premier client</span>
+                        </button>
+
+                        <!-- Bouton Déclencheur Tutoriel Flashcards -->
+                        <button onclick="lancerTutorielFlashcards()" class="text-xs font-semibold ${th.textMain} hover:underline mt-2">
+                            📖 Comment ça marche ?
+                        </button>
+                    </div>
+                `;
+            } else {
+                // SI DES DONNÉES EXISTENT : Cartes de Synthèse (KPIs) + Parc Actif
+                html += `
+                    <!-- Cartes Synthèse Express (KPIs) -->
+                    <div class="grid grid-cols-3 gap-3 mb-6">
+                        <div onclick="renderClients()" class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm text-center cursor-pointer active:scale-95 transition">
+                            <span class="block text-xl font-black text-gray-800">${clients.length}</span>
+                            <span class="text-[11px] font-semibold text-gray-400 uppercase"><i class="fa-solid fa-users mr-1"></i>Clients</span>
+                        </div>
+                        <div onclick="renderDashboard()" class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm text-center cursor-pointer active:scale-95 transition">
+                            <span class="block text-xl font-black ${th.textMain}">${equipements.length}</span>
+                            <span class="text-[11px] font-semibold text-gray-400 uppercase"><i class="fa-solid fa-snowflake mr-1"></i>Appareils</span>
+                        </div>
+                        <div onclick="renderRelances()" class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm text-center cursor-pointer active:scale-95 transition">
+                            <span class="block text-xl font-black ${relances.length > 0 ? 'text-red-500' : 'text-green-500'}">${relances.length}</span>
+                            <span class="text-[11px] font-semibold text-gray-400 uppercase"><i class="fa-brands fa-whatsapp mr-1"></i>Relances</span>
+                        </div>
+                    </div>
+
+                    <!-- En-tête Parc Actif -->
+                    <div class="mb-4 flex justify-between items-center">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800">Parc Actif & Passages</h3>
+                            <p class="text-xs text-gray-500">Validez vos entretiens effectués</p>
+                        </div>
+                        <button onclick="afficherFormClient()" class="${th.bgMain} text-white text-xs px-3 py-2 rounded-lg font-semibold shadow-sm flex items-center gap-1 active:scale-95 transition">
+                            <i class="fa-solid fa-plus"></i> Nouveau Client
+                        </button>
+                    </div>
+                `;
+
+                if (equipements.length === 0) {
+                    html += `
+                        <div class="text-center my-6 bg-white p-6 rounded-xl border border-dashed border-gray-300">
+                            <i class="fa-solid fa-wind text-3xl text-gray-300 mb-2"></i>
+                            <p class="text-gray-500 text-sm mb-3">Vos clients n'ont pas encore d'équipement enregistré.</p>
+                            <button onclick="renderClients()" class="${th.bgLight} ${th.textMain} px-4 py-2 rounded-lg text-xs font-bold">
+                                Aller au répertoire des clients
+                            </button>
+                        </div>`;
                 }
-            });
+
+                equipements.forEach(eq => {
+                    const client = clients.find(c => c.id === eq.clientId);
+                    if(client) {
+                        html += `
+                            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <h3 class="font-bold text-base text-gray-800">${client.nom}</h3>
+                                        <p class="text-xs text-gray-500"><i class="fa-solid fa-location-dot w-3 text-center mr-1"></i>${client.adresse}</p>
+                                    </div>
+                                    <span class="${th.bgLightest} ${th.textLight} text-[11px] px-2 py-0.5 rounded font-bold">${eq.type}</span>
+                                </div>
+                                <div class="bg-gray-50 p-2 rounded mt-2 text-xs text-gray-600 mb-3 border border-gray-100 flex justify-between">
+                                    <span><strong>Marque:</strong> ${eq.marque}</span>
+                                    <span><strong>Cycle:</strong> ${eq.frequenceMois} mois</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="cloturerIntervention(${eq.id})" class="w-full bg-[#25D366] text-white py-2.5 rounded-lg text-sm font-bold shadow-sm hover:bg-green-600 transition flex items-center justify-center">
+                                        <i class="fa-solid fa-check-circle mr-2"></i> Valider l'entretien
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+            }
 
             content.innerHTML = html;
         };
@@ -753,9 +898,12 @@
 
             if (clients.length === 0) {
                 html += `
-                    <div class="flex flex-col items-center justify-center mt-20 text-gray-400">
+                    <div class="flex flex-col items-center justify-center mt-16 text-gray-400">
                         <i class="fa-solid fa-users-slash text-5xl mb-4 text-gray-300"></i>
-                        <p class="italic text-center text-sm">Votre répertoire est vide.<br>Commencez par ajouter un client en haut à droite.</p>
+                        <p class="italic text-center text-sm mb-4">Votre répertoire est vide.<br>Commencez par ajouter un client.</p>
+                        <button onclick="afficherFormClient()" class="${th.bgMain} text-white text-xs px-4 py-2.5 rounded-lg font-bold shadow-md">
+                            + Ajouter un client
+                        </button>
                     </div>`;
             }
 
@@ -769,7 +917,6 @@
                         
                         <div class="flex justify-between items-start pr-12">
                             <h3 class="font-bold text-lg text-gray-800 leading-tight">${c.nom}</h3>
-                            <!-- Bouton Édition Client -->
                             <button onclick="afficherModaleEditionClient(${c.id})" class="text-gray-400 hover:${th.textMain} transition active:scale-90 p-1">
                                 <i class="fa-solid fa-pen"></i>
                             </button>
