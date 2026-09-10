@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HVAC CRM - Technicien</title>
+    <title>HVAC CRM - Technicien (Version Test)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome pour les icônes -->
@@ -27,10 +27,15 @@
         <h1 class="text-xl font-bold flex items-center">
             <i class="fa-solid fa-snowflake mr-2"></i> 
             <span id="company-name-display">CRM Froid & Clim</span>
-            <span id="pro-badge" class="hidden bg-yellow-400 text-yellow-900 text-[10px] font-bold px-1.5 py-0.5 rounded ml-2 shadow-sm">PRO</span>
+            <!-- Suppression du badge PRO ici -->
         </h1>
-        <div class="flex items-center gap-4">
-            <button onclick="afficherParametres()" class="text-white hover:text-gray-200 transition bg-white/20 p-2 rounded-full h-9 w-9 flex items-center justify-center">
+        <div class="flex items-center gap-2">
+            <!-- NOUVEAU : Bouton Feedback -->
+            <button onclick="afficherFeedbackPopup()" class="text-white hover:text-gray-200 transition bg-white/20 p-2 rounded-full h-9 w-9 flex items-center justify-center" title="Donner un avis">
+                <i class="fa-solid fa-comment-dots text-lg"></i>
+            </button>
+            <!-- Bouton Paramètres -->
+            <button onclick="afficherParametres()" class="text-white hover:text-gray-200 transition bg-white/20 p-2 rounded-full h-9 w-9 flex items-center justify-center" title="Paramètres">
                 <i class="fa-solid fa-gear text-lg"></i>
             </button>
         </div>
@@ -73,13 +78,13 @@
             black: { bgMain: 'bg-gray-800', bgHover: 'hover:bg-gray-900', bgLight: 'bg-gray-200', bgLightest: 'bg-gray-100', textMain: 'text-gray-800', textLight: 'text-gray-900' }
         };
 
-        // Variable globale pour suivre la vue active (0: Dashboard, 1: Clients, 2: Relances)
         let currentView = 0;
 
         // --- BASE DE DONNÉES LOCALE ---
         const initDB = () => {
+            // isPro est conservé dans l'initialisation pour ne pas corrompre les données existantes, mais il n'est plus utilisé
             if (!localStorage.getItem('hvac_settings')) {
-                localStorage.setItem('hvac_settings', JSON.stringify({ isPro: false, companyName: 'CRM Froid & Clim', theme: 'blue' }));
+                localStorage.setItem('hvac_settings', JSON.stringify({ isPro: true, companyName: 'CRM Froid & Clim', theme: 'blue' }));
             }
             if (!localStorage.getItem('hvac_clients')) {
                 localStorage.setItem('hvac_clients', JSON.stringify([
@@ -100,7 +105,7 @@
         const getDB = (table) => {
             const data = localStorage.getItem(`hvac_${table}`);
             if (data) return JSON.parse(data);
-            if (table === 'settings') return { isPro: false, companyName: 'CRM Froid & Clim', theme: 'blue' };
+            if (table === 'settings') return { isPro: true, companyName: 'CRM Froid & Clim', theme: 'blue' };
             return [];
         };
         const saveDB = (table, data) => localStorage.setItem(`hvac_${table}`, JSON.stringify(data));
@@ -113,20 +118,15 @@
             // Mise à jour du Header
             document.getElementById('company-name-display').innerText = settings.companyName;
             
-            // Affichage du badge PRO
-            const badge = document.getElementById('pro-badge');
-            if (settings.isPro) badge.classList.remove('hidden');
-            else badge.classList.add('hidden');
+            // Suppression de la logique du badge PRO
 
             // Changement de la couleur du Header
             const header = document.getElementById('main-header');
             header.classList.remove('bg-blue-600', 'bg-green-600', 'bg-red-600', 'bg-gray-800');
             header.classList.add(th.bgMain);
 
-            // Mise à jour de la Nav
             updateNav(currentView);
 
-            // Re-render de la vue active pour appliquer les couleurs
             if (currentView === 1) renderClients();
             else if (currentView === 2) renderRelances();
             else renderDashboard();
@@ -138,7 +138,6 @@
             const th = themes[settings.theme] || themes['blue'];
             
             btns.forEach((btn, idx) => {
-                // Nettoyage des anciennes classes de couleur
                 btn.className = btn.className.replace(/text-(blue|green|red|gray)-\d+/g, '');
                 
                 if (idx === activeIndex) {
@@ -171,69 +170,55 @@
         });
 
 
-        // --- SYSTÈME FREEMIUM (PAYWALL) ---
-        const afficherPaywall = () => {
-            const waMsg = encodeURIComponent("Bonjour, je souhaite payer les 10 000 FCFA pour obtenir mon code d'activation PRO pour le CRM Froid & Clim.");
-            const waLink = `https://wa.me/2250506509722?text=${waMsg}`;
-            
+        // --- NOUVEAU : SYSTÈME DE FEEDBACK WHATSAPP ---
+        const afficherFeedbackPopup = () => {
+            const settings = getDB('settings');
+            const th = themes[settings.theme] || themes['blue'];
+
             const html = `
-                <div class="p-6 text-center">
-                    <div class="w-16 h-16 bg-yellow-100 text-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl shadow-inner">
-                        <i class="fa-solid fa-crown"></i>
-                    </div>
-                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Passez à la version PRO</h2>
-                    <p class="text-gray-600 mb-6 text-sm leading-relaxed">Vous avez atteint la limite de 3 clients de la version gratuite.<br>Débloquez l'ajout <b>illimité</b> et la <b>personnalisation</b> (Nom, Couleurs) de votre CRM !</p>
-
-                    <a href="${waLink}" target="_blank" class="block w-full bg-[#25D366] text-white font-bold py-3.5 rounded-lg shadow-md mb-6 flex justify-center items-center gap-2 hover:bg-green-600 transition">
-                        <i class="fa-brands fa-whatsapp text-2xl"></i> Obtenir mon code PRO
-                    </a>
-
-                    <div class="border-t border-gray-200 pt-5 mt-2 bg-gray-50 -mx-6 px-6 pb-2">
-                        <label class="block text-sm font-bold text-gray-700 mb-2 text-left">J'ai déjà un code d'activation :</label>
-                        <div class="flex gap-2">
-                            <input type="text" id="pro-code" class="flex-1 border border-gray-300 rounded-lg p-3 outline-none focus:border-yellow-500 font-mono text-sm uppercase" placeholder="Ex: PRO-XXXX-XXXX">
-                            <button onclick="validerCodePro()" class="bg-gray-800 text-white px-5 rounded-lg font-bold hover:bg-black transition">Valider</button>
-                        </div>
-                        <p id="pro-error" class="text-red-500 text-xs text-left mt-2 hidden font-semibold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Code invalide. Veuillez réessayer.</p>
+                <div class="p-4 bg-gray-50 border-b flex justify-between items-center sticky top-0">
+                    <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-comment-dots mr-2 text-gray-500"></i>Votre avis</h3>
+                    <button onclick="fermerModal()" class="text-gray-500 text-2xl px-2">&times;</button>
+                </div>
+                <div class="p-5 flex flex-col gap-4">
+                    <div class="bg-blue-50 text-blue-800 p-3 rounded-lg text-sm border border-blue-100">
+                        <i class="fa-solid fa-lightbulb mr-1 text-blue-500"></i>
+                        Votre retour est très attendu pour les suggestions d'amélioration de l'application.
                     </div>
                     
-                    <button onclick="fermerModal()" class="mt-5 text-gray-400 hover:text-gray-600 text-sm font-semibold transition">Plus tard</button>
+                    <textarea id="feedback-text" rows="5" class="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-gray-500 transition resize-none text-sm" placeholder="Ex: J'aimerais pouvoir ajouter des photos aux interventions... \n\nOu: J'ai rencontré un bug lors de l'ajout d'un client."></textarea>
+                    
+                    <button onclick="envoyerFeedback()" class="w-full ${th.bgMain} text-white font-bold py-3.5 rounded-lg mt-2 shadow-md hover:opacity-90 transition flex items-center justify-center gap-2">
+                        <i class="fa-brands fa-whatsapp text-xl"></i> Envoyer via WhatsApp
+                    </button>
                 </div>
             `;
             ouvrirModal(html);
         };
 
-        const validerCodePro = () => {
-            const input = document.getElementById('pro-code').value.trim().toUpperCase();
-            if (input === 'PRO-HVAC-2026') {
-                const settings = getDB('settings');
-                settings.isPro = true;
-                saveDB('settings', settings);
-                
-                alert("🎉 Félicitations ! Votre CRM est maintenant débloqué en version PRO.");
-                fermerModal();
-                updateAppUI();
-                
-                // Si on venait de la création de client, on réouvre le formulaire
-                if (currentView === 1) afficherFormClient();
-            } else {
-                document.getElementById('pro-error').classList.remove('hidden');
-            }
+        const envoyerFeedback = () => {
+            const text = document.getElementById('feedback-text').value.trim();
+            const messageBase = "Bonjour, voici mon retour concernant l'application de test CRM Froid & Clim :\n\n";
+            // Construit le message final (si vide, met un message par défaut sympathique)
+            const messageComplet = text !== "" ? (messageBase + text) : (messageBase + "(Je n'ai pas écrit de commentaire, mais je teste l'application !)");
+            
+            // encodeURIComponent permet de formater les espaces et les sauts de lignes (\n) pour l'URL
+            const waLink = `https://wa.me/2250506509722?text=${encodeURIComponent(messageComplet)}`;
+            
+            window.open(waLink, '_blank');
+            fermerModal();
         };
 
 
-        // --- PARAMÈTRES (RÉSERVÉS AUX PRO) ---
+        // --- PARAMÈTRES (LIBRES D'ACCÈS DÉSORMAIS) ---
         const afficherParametres = () => {
             const settings = getDB('settings');
             
-            if (!settings.isPro) {
-                afficherPaywall();
-                return;
-            }
+            // Suppression de la condition d'accès Paywall (if (!settings.isPro)...)
 
             const html = `
                 <div class="p-4 bg-gray-50 border-b flex justify-between items-center sticky top-0">
-                    <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-gear mr-2"></i>Paramètres PRO</h3>
+                    <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-gear mr-2 text-gray-500"></i>Paramètres</h3>
                     <button onclick="fermerModal()" class="text-gray-500 text-2xl px-2">&times;</button>
                 </div>
                 <form onsubmit="sauvegarderParametres(event)" class="p-5 flex flex-col gap-5">
@@ -286,15 +271,10 @@
 
         // --- FORMULAIRES MÉTIER ---
         const afficherFormClient = () => {
-            const clients = getDB('clients');
             const settings = getDB('settings');
             const th = themes[settings.theme] || themes['blue'];
 
-            // INTERCEPTION FREEMIUM
-            if (clients.length >= 3 && !settings.isPro) {
-                afficherPaywall();
-                return;
-            }
+            // Suppression totale de la limitation Freemium des 3 clients
 
             const html = `
                 <div class="p-4 bg-gray-50 border-b flex justify-between items-center sticky top-0">
@@ -646,7 +626,7 @@
 
         // --- INITIALISATION ---
         initDB();
-        updateAppUI(); // Initialise les thèmes et affiche le Dashboard
+        updateAppUI(); 
         updateBadge();
 
     </script>
