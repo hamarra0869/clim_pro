@@ -1,1045 +1,590 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Suivi Maintenance CVC</title>
-    <!-- Tailwind CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClimPro Abidjan | Entretien & Dépannage Climatisation Transparents</title>
+    <meta name="description" content="Service de climatisation à Abidjan pour Cadres et PME. Diagnostic clair, juste prix, et zéro tricherie sur la matière d'œuvre. Intervention rapide.">
+    
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome pour les icônes -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* Optimisations tactiles */
-        button, a { touch-action: manipulation; }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        /* Animation fluide pour les modales */
-        .modal-enter { animation: slideUp 0.3s ease-out forwards; }
-        @keyframes slideUp {
-            from { transform: translateY(10%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+    
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            accent: '#2563eb',
+                            gold: '#f59e0b'
+                        },
+                        dark: {
+                            bg: '#090d16',
+                            card: '#111827',
+                            border: 'rgba(255, 255, 255, 0.08)',
+                            hover: 'rgba(255, 255, 255, 0.03)'
+                        }
+                    }
+                }
+            }
         }
-        /* Animation d'entrée douce pour l'onboarding */
-        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #090d16;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+
+        /* Glassmorphism utility */
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Subtle Glow Effects */
+        .glow-blue {
+            box-shadow: 0 0 50px -12px rgba(14, 165, 233, 0.25);
+        }
+
+        /* Scroll Reveal Transitions */
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Custom Pulse Animation for CTA */
+        @keyframes subtle-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.4); }
+            50% { box-shadow: 0 0 0 12px rgba(14, 165, 233, 0); }
+        }
+        .pulse-cta {
+            animation: subtle-pulse 3s infinite;
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans antialiased pb-20">
+<body class="antialiased selection:bg-brand-500 selection:text-white">
 
-    <!-- Header -->
-    <header id="main-header" class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-40 flex justify-between items-center transition-colors duration-300">
-        <h1 class="text-xl font-bold flex items-center">
-            <i class="fa-solid fa-snowflake mr-2"></i> 
-            <span id="company-name-display">Suivi Maintenance CVC</span>
-        </h1>
-        <div class="flex items-center gap-2">
-            <!-- Bouton Feedback -->
-            <button onclick="afficherFeedbackPopup()" class="text-white hover:text-gray-200 transition bg-white/20 p-2 rounded-full h-9 w-9 flex items-center justify-center" title="Donner un avis">
-                <i class="fa-solid fa-comment-dots text-lg"></i>
-            </button>
-            
-            <!-- Wrapper relatif pour le bouton Paramètres et son Tooltip -->
-            <div class="relative">
-                <button onclick="dismissHint('settings'); afficherParametres()" class="text-white hover:text-gray-200 transition bg-white/20 p-2 rounded-full h-9 w-9 flex items-center justify-center relative" title="Paramètres">
-                    <i class="fa-solid fa-gear text-lg"></i>
-                </button>
-                
-                <!-- Tooltip d'onboarding (Caché par défaut) -->
-                <div id="hint-settings" class="hidden absolute top-[120%] right-0 w-48 bg-gray-800 text-white text-xs rounded-lg p-3 shadow-xl z-50 animate-pulse transition-opacity">
-                    Appuyez ici pour personnaliser votre application
-                    <div class="absolute -top-1 right-3 w-3 h-3 bg-gray-800 transform rotate-45"></div>
+    <!-- HEADER / NAVIGATION -->
+    <header class="fixed top-0 left-0 w-full z-40 glass-panel border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <!-- Logo -->
+            <a href="#" class="flex items-center gap-3 group" aria-label="Accueil ClimPro Abidjan">
+                <div class="w-10 h-10 rounded-xl bg-brand-500/10 border border-brand-500/30 flex items-center justify-center text-brand-400 group-hover:scale-105 transition-transform">
+                    <i data-lucide="snowflake" class="w-6 h-6"></i>
                 </div>
+                <div class="flex flex-col">
+                    <span class="font-bold text-lg tracking-tight text-white flex items-center gap-1.5">
+                        ClimPro <span class="text-brand-400">Abidjan</span>
+                    </span>
+                    <span class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold">Service Froid Certifié</span>
+                </div>
+            </a>
+
+            <!-- Desktop Navigation -->
+            <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
+                <a href="#engagements" class="hover:text-white transition-colors">Nos Engagements</a>
+                <a href="#prestations" class="hover:text-white transition-colors">Prestations</a>
+                <a href="#avis" class="hover:text-white transition-colors">Avis Clients</a>
+                <a href="#faq" class="hover:text-white transition-colors">FAQ</a>
+            </nav>
+
+            <!-- Actions Desktop -->
+            <div class="hidden md:flex items-center gap-4">
+                <a href="tel:+2250000000000" class="text-xs font-semibold text-gray-300 hover:text-white flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/5 transition-all">
+                    <i data-lucide="phone" class="w-4 h-4 text-brand-400"></i>
+                    <span>+225 07 00 00 00 00</span>
+                </a>
+                <button onclick="openModal()" class="pulse-cta bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg shadow-brand-500/20 flex items-center gap-2" aria-label="Prendre rendez-vous">
+                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                    <span>Prendre RDV</span>
+                </button>
+            </div>
+
+            <!-- Mobile Menu Button -->
+            <button id="mobileMenuBtn" class="md:hidden text-gray-300 hover:text-white p-2" aria-label="Ouvrir le menu">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+        </div>
+
+        <!-- Mobile Navigation Menu -->
+        <div id="mobileMenu" class="hidden md:hidden glass-panel border-t border-white/10 px-6 py-6 space-y-4">
+            <a href="#engagements" class="block text-gray-300 hover:text-white font-medium py-2">Nos Engagements</a>
+            <a href="#prestations" class="block text-gray-300 hover:text-white font-medium py-2">Prestations</a>
+            <a href="#avis" class="block text-gray-300 hover:text-white font-medium py-2">Avis Clients</a>
+            <a href="#faq" class="block text-gray-300 hover:text-white font-medium py-2">FAQ</a>
+            <div class="pt-4 border-t border-white/10 flex flex-col gap-3">
+                <a href="tel:+2250000000000" class="flex items-center justify-center gap-2 text-sm font-semibold text-gray-300 py-2 bg-white/5 rounded-xl">
+                    <i data-lucide="phone" class="w-4 h-4 text-brand-400"></i>
+                    <span>+225 07 00 00 00 00</span>
+                </a>
+                <button onclick="openModal()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 rounded-xl shadow-lg shadow-brand-500/20 flex items-center justify-center gap-2">
+                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                    <span>Prendre Rendez-vous</span>
+                </button>
             </div>
         </div>
     </header>
 
-    <!-- Conteneur Principal -->
-    <main id="app-content" class="p-4"></main>
+    <main class="pt-28">
+        <!-- HERO SECTION -->
+        <section class="relative min-h-[85vh] flex items-center justify-center px-4 sm:px-6 lg:px-8 overflow-hidden">
+            <!-- Background Orbs / Glows -->
+            <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-500/10 rounded-full blur-[140px] pointer-events-none"></div>
+            <div class="absolute bottom-10 right-10 w-80 h-80 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none"></div>
 
-    <!-- Navigation Basse (Mobile) -->
-    <nav class="fixed bottom-0 w-full z-40 bg-white border-t border-gray-200 flex justify-around p-3 pb-safe shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-        <button onclick="renderDashboard()" id="nav-btn-0" class="nav-btn flex flex-col items-center text-blue-600 transition">
-            <i class="fa-solid fa-house text-xl mb-1"></i>
-            <span class="text-xs font-semibold">Accueil</span>
-        </button>
-        <button onclick="renderClients()" id="nav-btn-1" class="nav-btn flex flex-col items-center text-gray-400 hover:text-blue-500 transition">
-            <i class="fa-solid fa-users text-xl mb-1"></i>
-            <span class="text-xs font-semibold">Clients</span>
-        </button>
-        <button onclick="renderRelances()" id="nav-btn-2" class="nav-btn flex flex-col items-center text-gray-400 hover:text-blue-500 relative transition">
-            <i class="fa-brands fa-whatsapp text-xl mb-1"></i>
-            <span class="text-xs font-semibold">Relances</span>
-            <span id="badge-relances" class="absolute top-0 right-2 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center hidden">0</span>
-        </button>
-    </nav>
-
-    <!-- Overlay Modale Métier (Formulaires) -->
-    <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex-col justify-end sm:justify-center items-center">
-        <div id="modal-content" class="bg-white w-full sm:w-96 sm:rounded-xl rounded-t-2xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto transform transition-all">
-            <!-- Le contenu du formulaire sera injecté ici -->
-        </div>
-    </div>
-
-    <!-- Overlay Onboarding Tour -->
-    <div id="onboarding-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-80 z-[60] hidden flex-col justify-center items-center p-4">
-        <div id="onboarding-content" class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center fade-in">
-            <!-- Le contenu de l'étape d'onboarding sera injecté ici -->
-        </div>
-    </div>
-
-    <!-- Vanilla JavaScript -->
-    <script>
-        // --- DICTIONNAIRE DES THÈMES ---
-        const themes = {
-            blue: { bgMain: 'bg-blue-600', bgHover: 'hover:bg-blue-700', bgLight: 'bg-blue-100', bgLightest: 'bg-blue-50', textMain: 'text-blue-600', textLight: 'text-blue-700' },
-            green: { bgMain: 'bg-green-600', bgHover: 'hover:bg-green-700', bgLight: 'bg-green-100', bgLightest: 'bg-green-50', textMain: 'text-green-600', textLight: 'text-green-700' },
-            red: { bgMain: 'bg-red-600', bgHover: 'hover:bg-red-700', bgLight: 'bg-red-100', bgLightest: 'bg-red-50', textMain: 'text-red-600', textLight: 'text-red-700' },
-            black: { bgMain: 'bg-gray-800', bgHover: 'hover:bg-gray-900', bgLight: 'bg-gray-200', bgLightest: 'bg-gray-100', textMain: 'text-gray-800', textLight: 'text-gray-900' }
-        };
-
-        let currentView = 0;
-
-        // --- LOGIQUE D'ONBOARDING ---
-        let currentOnboardingStep = 0;
-        const onboardingSteps = [
-            {
-                icon: 'fa-handshake',
-                title: 'Bienvenue sur votre outil !',
-                text: 'Cette application est conçue spécialement pour vous, techniciens CVC. Elle va vous aider à organiser vos passages et ne plus oublier aucune maintenance.',
-                btnText: 'Suivant'
-            },
-            {
-                icon: 'fa-address-book',
-                title: 'Votre Répertoire',
-                text: 'Dans l\'onglet "Clients", ajoutez vos contacts et associez-leur des équipements. Le système calculera automatiquement les dates des prochains entretiens !',
-                btnText: 'Suivant'
-            },
-            {
-                icon: 'fa-palette',
-                title: 'À votre image',
-                text: 'Vous pourrez personnaliser le nom de l\'entreprise et la couleur de l\'application depuis les paramètres pour qu\'elle vous ressemble à 100%.',
-                btnText: 'C\'est parti !'
-            }
-        ];
-
-        const initOnboarding = () => {
-            const isDone = localStorage.getItem('hvac_onboarding_done');
-            if (!isDone) {
-                document.getElementById('onboarding-overlay').classList.remove('hidden');
-                document.getElementById('onboarding-overlay').classList.add('flex');
-                renderOnboardingStep();
-            } else {
-                checkHints();
-            }
-        };
-
-        const renderOnboardingStep = () => {
-            const step = onboardingSteps[currentOnboardingStep];
-            const content = document.getElementById('onboarding-content');
-            
-            let dots = '';
-            for(let i = 0; i < onboardingSteps.length; i++) {
-                dots += `<div class="w-2.5 h-2.5 rounded-full transition-colors ${i === currentOnboardingStep ? 'bg-blue-600' : 'bg-gray-200'}"></div>`;
-            }
-
-            content.classList.remove('fade-in');
-            void content.offsetWidth; 
-            content.classList.add('fade-in');
-
-            content.innerHTML = `
-                <div class="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-5 text-4xl shadow-inner">
-                    <i class="fa-solid ${step.icon}"></i>
-                </div>
-                <h2 class="text-2xl font-bold text-gray-800 mb-3">${step.title}</h2>
-                <p class="text-gray-500 mb-8 text-sm leading-relaxed">${step.text}</p>
-                
-                <div class="flex justify-center gap-2.5 mb-8">
-                    ${dots}
+            <div class="max-w-4xl mx-auto text-center relative z-10 space-y-8 reveal">
+                <!-- Badge Zone -->
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-panel border border-brand-500/30 text-xs font-semibold text-brand-400 uppercase tracking-wider">
+                    <span class="w-2 h-2 rounded-full bg-brand-400 animate-ping"></span>
+                    <span>Intervention Abidjan &amp; Environs • Cadres &amp; PME</span>
                 </div>
 
-                <button onclick="nextOnboardingStep()" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-blue-700 transition active:scale-95">
-                    ${step.btnText}
+                <!-- Main Title -->
+                <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.15]">
+                    Climatisation à Abidjan : <br class="hidden sm:inline"/>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-blue-300 to-white">Transparence Totale, Zéro Tricherie.</span>
+                </h1>
+
+                <!-- Subtitle -->
+                <p class="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto font-normal leading-relaxed">
+                    Enfin des techniciens froid rigoureux, courtois et discrets. Nous garantissons le juste prix, la quantité exacte de matière d'œuvre et des diagnostics clairs pour vos résidences et bureaux.
+                </p>
+
+                <!-- CTAs -->
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+                    <button onclick="openModal()" class="w-full sm:w-auto pulse-cta bg-brand-500 hover:bg-brand-600 text-white font-bold text-base px-8 py-4 rounded-xl transition-all transform hover:-translate-y-0.5 shadow-xl shadow-brand-500/25 flex items-center justify-center gap-3">
+                        <i data-lucide="shield-check" class="w-5 h-5"></i>
+                        <span>Réserver un technicien de confiance</span>
+                    </button>
+                    <a href="#engagements" class="w-full sm:w-auto glass-panel hover:bg-white/5 text-gray-300 hover:text-white font-semibold text-base px-8 py-4 rounded-xl transition-all flex items-center justify-center gap-2">
+                        <span>Découvrir nos engagements</span>
+                        <i data-lucide="arrow-down" class="w-4 h-4"></i>
+                    </a>
+                </div>
+
+                <!-- Micro-Reassurance Banner -->
+                <div class="pt-8 border-t border-white/5 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-medium text-gray-400 max-w-3xl mx-auto">
+                    <div class="flex items-center justify-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-brand-400"></i>
+                        <span>Diagnostic validé avant travaux</span>
+                    </div>
+                    <div class="flex items-center justify-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-brand-400"></i>
+                        <span>Matériel &amp; Gaz d'Origine</span>
+                    </div>
+                    <div class="flex items-center justify-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-brand-400"></i>
+                        <span>Intervention Discrète &amp; Propre</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: NOS ENGAGEMENTS (LES 3 PILIERS) -->
+        <section id="engagements" class="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative">
+            <div class="text-center space-y-4 mb-16 reveal">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-brand-400">Confiance &amp; Rigorisme</h2>
+                <p class="text-3xl sm:text-4xl font-bold text-white tracking-tight">Pourquoi les Cadres et PME d'Abidjan nous font confiance</p>
+                <p class="text-gray-400 max-w-xl mx-auto text-sm">Nous avons éliminé toutes les mauvaises pratiques du secteur pour vous offrir une sérénité absolue.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Engagement 1 -->
+                <div class="glass-panel p-8 rounded-2xl hover:border-brand-500/40 transition-all duration-300 group hover:-translate-y-1 reveal">
+                    <div class="w-12 h-12 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="receipt" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Le Juste Prix, Sans Surprise</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Chaque centime est justifié. Nous établissons un devis clair et définitif avant la moindre manipulation. Pas de frais occultes ni d'exagération.
+                    </p>
+                </div>
+
+                <!-- Engagement 2 -->
+                <div class="glass-panel p-8 rounded-2xl hover:border-brand-500/40 transition-all duration-300 group hover:-translate-y-1 reveal">
+                    <div class="w-12 h-12 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="scale" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Zéro Tricherie sur la Matière</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Exactitude rigoureuse sur la quantité de gaz réfrigérant et la qualité des consommables. Vous contrôlez chaque étape de l'intervention.
+                    </p>
+                </div>
+
+                <!-- Engagement 3 -->
+                <div class="glass-panel p-8 rounded-2xl hover:border-brand-500/40 transition-all duration-300 group hover:-translate-y-1 reveal">
+                    <div class="w-12 h-12 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="user-check" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Courtoisie &amp; Discrétion</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Nos techniciens respectent vos locaux professionnels et votre vie privée. Travail propre, tenue soignée et ponctualité exemplaire.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: NOS PRESTATIONS -->
+        <section id="prestations" class="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative border-t border-white/5">
+            <div class="text-center space-y-4 mb-16 reveal">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-brand-400">Solutions Climatisation</h2>
+                <p class="text-3xl sm:text-4xl font-bold text-white tracking-tight">Des interventions sur-mesure pour vos Splits et Centrales</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Prestation 1 -->
+                <div class="glass-panel rounded-2xl p-6 border border-white/5 hover:border-brand-500/30 transition-all reveal">
+                    <div class="h-40 rounded-xl bg-gradient-to-br from-brand-500/20 to-transparent flex items-center justify-center mb-6">
+                        <i data-lucide="settings" class="w-12 h-12 text-brand-400"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Entretien Préventif &amp; Nettoyage</h3>
+                    <p class="text-gray-400 text-sm mb-4">Désinfection des filtres, nettoyage complet des turbines et vérification des pressions pour optimiser votre consommation électrique.</p>
+                    <ul class="text-xs text-gray-300 space-y-2">
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-brand-400"></i> Traitement anti-bactérien</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-brand-400"></i> Économie d'énergie jusqu'à 30%</li>
+                    </ul>
+                </div>
+
+                <!-- Prestation 2 -->
+                <div class="glass-panel rounded-2xl p-6 border border-brand-500/30 relative shadow-2xl glow-blue reveal">
+                    <span class="absolute -top-3 right-6 bg-brand-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">Le plus demandé</span>
+                    <div class="h-40 rounded-xl bg-gradient-to-br from-brand-500/30 to-blue-600/10 flex items-center justify-center mb-6">
+                        <i data-lucide="wrench" class="w-12 h-12 text-brand-400"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Diagnostic &amp; Dépannage</h3>
+                    <p class="text-gray-400 text-sm mb-4">Recherche de fuites de gaz au détecteur électronique, réparation de cartes ou compresseurs sans remplacement abusif.</p>
+                    <ul class="text-xs text-gray-300 space-y-2">
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-brand-400"></i> Détection exacte des pannes</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-brand-400"></i> Recharge en gaz certifié</li>
+                    </ul>
+                </div>
+
+                <!-- Prestation 3 -->
+                <div class="glass-panel rounded-2xl p-6 border border-white/5 hover:border-brand-500/30 transition-all reveal">
+                    <div class="h-40 rounded-xl bg-gradient-to-br from-brand-500/20 to-transparent flex items-center justify-center mb-6">
+                        <i data-lucide="building-2" class="w-12 h-12 text-brand-400"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Installation &amp; Dimensionnement</h3>
+                    <p class="text-gray-400 text-sm mb-4">Pose rigoureuse de splits muraux, cassettes et armoires de climatisation selon les normes strictes des constructeurs.</p>
+                    <ul class="text-xs text-gray-300 space-y-2">
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-brand-400"></i> Calcul de bilan thermique</li>
+                        <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-brand-400"></i> Finitions soignées et propres</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: AVIS CLIENTS / PREUVE SOCIALE -->
+        <section id="avis" class="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-white/5">
+            <div class="text-center space-y-4 mb-16 reveal">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-brand-400">Retours d'Expérience</h2>
+                <p class="text-3xl sm:text-4xl font-bold text-white tracking-tight">Ce que disent les professionnels et résidents exigeants</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Avis 1 -->
+                <div class="glass-panel p-8 rounded-2xl border border-white/5 space-y-4 reveal">
+                    <div class="flex items-center gap-1 text-brand-gold">
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                    </div>
+                    <p class="text-gray-300 italic text-base leading-relaxed">
+                        « Enfin un technicien qui ne cherche pas à vous facturer des pièces imaginaires ou du gaz superflu. Le diagnostic pour notre plateau de bureaux à Cocody était net, précis et honnête. »
+                    </p>
+                    <div class="pt-4 border-t border-white/5 flex items-center justify-between">
+                        <div>
+                            <p class="font-bold text-white text-sm">M. Kouadio</p>
+                            <p class="text-xs text-gray-400">Gérant de PME — Cocody</p>
+                        </div>
+                        <span class="text-[10px] text-brand-400 bg-brand-500/10 px-2.5 py-1 rounded-full border border-brand-500/20">Client Vérifié</span>
+                    </div>
+                </div>
+
+                <!-- Avis 2 -->
+                <div class="glass-panel p-8 rounded-2xl border border-white/5 space-y-4 reveal">
+                    <div class="flex items-center gap-1 text-brand-gold">
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                        <i data-lucide="star" class="w-5 h-5 fill-current"></i>
+                    </div>
+                    <p class="text-gray-300 italic text-base leading-relaxed">
+                        « Très courtois, extrêmement discret et surtout intègre. Ils sont intervenus à mon domicile sans déranger et la facturation correspondait exactement au matériel posé. Je recommande. »
+                    </p>
+                    <div class="pt-4 border-t border-white/5 flex items-center justify-between">
+                        <div>
+                            <p class="font-bold text-white text-sm">Mme. Touré</p>
+                            <p class="text-xs text-gray-400">Cadre Supérieur — Marcory Zone 4</p>
+                        </div>
+                        <span class="text-[10px] text-brand-400 bg-brand-500/10 px-2.5 py-1 rounded-full border border-brand-500/20">Client Vérifié</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: FAQ ACCORDÉON -->
+        <section id="faq" class="py-24 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto border-t border-white/5">
+            <div class="text-center space-y-4 mb-16 reveal">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-brand-400">Questions Fréquentes</h2>
+                <p class="text-3xl sm:text-4xl font-bold text-white tracking-tight">Des réponses claires à vos interrogations</p>
+            </div>
+
+            <div class="space-y-4 reveal">
+                <!-- Question 1 -->
+                <div class="glass-panel rounded-xl border border-white/5 overflow-hidden">
+                    <button class="w-full text-left p-6 font-semibold text-white flex justify-between items-center gap-4 faq-toggle" aria-expanded="false">
+                        <span>Comment garantissez-vous la juste quantité de matière d'œuvre ?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-brand-400 transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-content hidden px-6 pb-6 text-sm text-gray-400 leading-relaxed border-t border-white/5 pt-4">
+                        Avant d'injecter du gaz ou de remplacer une pièce, nous effectuons des mesures sous vos yeux avec manomètres certifiés. Vous validez exactement ce qui est ajouté, sans surplus injustifié.
+                    </div>
+                </div>
+
+                <!-- Question 2 -->
+                <div class="glass-panel rounded-xl border border-white/5 overflow-hidden">
+                    <button class="w-full text-left p-6 font-semibold text-white flex justify-between items-center gap-4 faq-toggle" aria-expanded="false">
+                        <span>Intervenez-vous dans les entreprises pendant les heures de bureau ?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-brand-400 transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-content hidden px-6 pb-6 text-sm text-gray-400 leading-relaxed border-t border-white/5 pt-4">
+                        Absolument. Nos équipes sont spécialement formées pour travailler dans une discrétion totale, sans perturber vos collaborateurs ni votre activité professionnelle.
+                    </div>
+                </div>
+
+                <!-- Question 3 -->
+                <div class="glass-panel rounded-xl border border-white/5 overflow-hidden">
+                    <button class="w-full text-left p-6 font-semibold text-white flex justify-between items-center gap-4 faq-toggle" aria-expanded="false">
+                        <span>Quels sont les délais d'intervention à Abidjan ?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-brand-400 transition-transform duration-300"></i>
+                    </button>
+                    <div class="faq-content hidden px-6 pb-6 text-sm text-gray-400 leading-relaxed border-t border-white/5 pt-4">
+                        Nous intervenons sous 24h à 48h selon votre commune (Cocody, Marcory, Plateau, Riviera, Deux-Plateaux, etc.) après confirmation du rendez-vous.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION CTA FINAL DE CONVERSION -->
+        <section class="py-24 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+            <div class="glass-panel rounded-3xl p-8 sm:p-12 border border-brand-500/30 text-center space-y-8 relative overflow-hidden glow-blue reveal">
+                <div class="absolute -top-24 -right-24 w-64 h-64 bg-brand-500/20 rounded-full blur-[80px] pointer-events-none"></div>
+
+                <h2 class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
+                    Optimisez le confort de vos locaux dès aujourd'hui
+                </h2>
+                <p class="text-gray-300 text-base sm:text-lg max-w-2xl mx-auto">
+                    Bénéficiez d'un diagnostic rigoureux, transparent et sans engagement. Réservez votre créneau en 30 secondes.
+                </p>
+
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+                    <button onclick="openModal()" class="w-full sm:w-auto pulse-cta bg-brand-500 hover:bg-brand-600 text-white font-bold text-lg px-9 py-4 rounded-xl transition-all shadow-xl shadow-brand-500/30 flex items-center justify-center gap-3">
+                        <i data-lucide="calendar" class="w-5 h-5"></i>
+                        <span>Planifier mon intervention</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-white/10 py-12 px-4 sm:px-6 lg:px-8 text-xs text-gray-500">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-3">
+                <div class="w-7 h-7 rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400">
+                    <i data-lucide="snowflake" class="w-4 h-4"></i>
+                </div>
+                <span class="text-gray-300 font-semibold text-sm">ClimPro Abidjan</span>
+            </div>
+            <p>© 2026 ClimPro Abidjan. Tous droits réservés. Service Froid &amp; Climatisation Transparents.</p>
+            <div class="flex gap-6 text-gray-400">
+                <span>Abidjan, Côte d'Ivoire</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODALE DE PRISE DE RENDEZ-VOUS (PRIORITAIRE) -->
+    <div id="bookingModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div class="glass-panel w-full max-w-lg rounded-2xl p-6 sm:p-8 border border-white/10 relative shadow-2xl animate-in fade-in zoom-in duration-200">
+            <!-- Close button -->
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white p-2" aria-label="Fermer la modale">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <div class="space-y-2 mb-6">
+                <h3 class="text-2xl font-bold text-white tracking-tight">Prendre Rendez-vous</h3>
+                <p class="text-xs text-gray-400">Remplissez ce formulaire. Nous vous rappelons sous 2h pour confirmer l'intervention.</p>
+            </div>
+
+            <!-- Form -->
+            <form id="bookingForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <div>
+                    <label for="fullName" class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Nom complet / Entreprise</label>
+                    <input type="text" id="fullName" required placeholder="Ex: Jean Marc / Cabinet K-Conseil" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 transition-colors">
+                </div>
+
+                <div>
+                    <label for="phone" class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Numéro Téléphone / WhatsApp</label>
+                    <input type="tel" id="phone" required placeholder="Ex: 07 00 00 00 00" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 transition-colors">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="serviceType" class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Besoin</label>
+                        <select id="serviceType" class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-500 transition-colors">
+                            <option value="entretien">Entretien</option>
+                            <option value="depannage">Dépannage</option>
+                            <option value="installation">Installation</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="location" class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Commune</label>
+                        <input type="text" id="location" required placeholder="Ex: Cocody" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 transition-colors">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/25 transition-all flex items-center justify-center gap-2 text-sm mt-4">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                    <span>Valider ma demande</span>
                 </button>
-            `;
-        };
+            </form>
 
-        const nextOnboardingStep = () => {
-            if (currentOnboardingStep < onboardingSteps.length - 1) {
-                currentOnboardingStep++;
-                renderOnboardingStep();
-            } else {
-                localStorage.setItem('hvac_onboarding_done', 'true');
-                document.getElementById('onboarding-overlay').classList.add('hidden');
-                document.getElementById('onboarding-overlay').classList.remove('flex');
-                checkHints();
-            }
-        };
-
-        const checkHints = () => {
-            if (!localStorage.getItem('hvac_hint_settings_done')) {
-                const hintSettings = document.getElementById('hint-settings');
-                if(hintSettings) hintSettings.classList.remove('hidden');
-            }
-        };
-
-        const dismissHint = (type) => {
-            localStorage.setItem(`hvac_hint_${type}_done`, 'true');
-            const hintEl = document.getElementById(`hint-${type}`);
-            if (hintEl) {
-                hintEl.classList.add('opacity-0');
-                setTimeout(() => hintEl.remove(), 300);
-            }
-        };
-
-
-        // --- LOGIQUE DU TUTORIEL FLASHCARDS ---
-        let currentFlashcardStep = 0;
-        const flashcardSteps = [
-            {
-                title: 'Étape 1',
-                text: 'Enregistrez un client avec son numéro WhatsApp.',
-                icon: 'fa-user'
-            },
-            {
-                title: 'Étape 2',
-                text: 'Associez-lui un équipement (ex: Split, 12 mois).',
-                icon: 'fa-toolbox'
-            },
-            {
-                title: 'Étape 3',
-                text: 'L\'application prépare vos messages de relance automatiques !',
-                icon: 'fa-whatsapp'
-            }
-        ];
-
-        const lancerTutorielFlashcards = () => {
-            currentFlashcardStep = 0;
-            renderCurrentFlashcard();
-        };
-
-        const renderCurrentFlashcard = () => {
-            const step = flashcardSteps[currentFlashcardStep];
-            const settings = getDB('settings');
-            const th = themes[settings.theme] || themes['blue'];
-
-            let dots = '';
-            for(let i = 0; i < flashcardSteps.length; i++) {
-                dots += `<div class="w-2.5 h-2.5 rounded-full transition-colors ${i === currentFlashcardStep ? th.bgMain : 'bg-gray-200'}"></div>`;
-            }
-
-            const isLast = currentFlashcardStep === flashcardSteps.length - 1;
-
-            const html = `
-                <div class="p-4 bg-gray-50 border-b flex justify-between items-center sticky top-0">
-                    <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-circle-question mr-2 text-gray-400"></i>Comment ça marche ?</h3>
-                    <button onclick="fermerModal()" class="text-gray-500 text-2xl px-2">&times;</button>
+            <!-- Success State -->
+            <div id="successMessage" class="hidden text-center py-8 space-y-4">
+                <div class="w-14 h-14 rounded-full bg-green-500/20 text-green-400 mx-auto flex items-center justify-center border border-green-500/30">
+                    <i data-lucide="check-circle" class="w-8 h-8"></i>
                 </div>
-                <div class="p-6 text-center">
-                    <div class="w-20 h-20 ${th.bgLightest} ${th.textMain} rounded-full flex items-center justify-center mx-auto mb-5 text-4xl shadow-inner">
-                        <i class="fa-solid ${step.icon}"></i>
-                    </div>
-                    <span class="text-xs font-extrabold uppercase tracking-widest text-gray-400 mb-1 block">${step.title}</span>
-                    <p class="text-gray-700 mb-8 text-sm leading-relaxed">${step.text}</p>
-                    
-                    <div class="flex justify-center gap-2.5 mb-8">
-                        ${dots}
-                    </div>
+                <h4 class="text-xl font-bold text-white">Demande Enregistrée !</h4>
+                <p class="text-xs text-gray-300 max-w-xs mx-auto">
+                    Merci. Notre équipe technique prend contact avec vous sur le numéro indiqué sous très court délai.
+                </p>
+                <button onclick="closeModal()" class="bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-6 py-2.5 rounded-xl transition-all">
+                    Fermer
+                </button>
+            </div>
+        </div>
+    </div>
 
-                    <button onclick="nextFlashcardStep()" class="w-full ${th.bgMain} text-white font-bold py-3.5 rounded-xl shadow-md hover:opacity-95 transition active:scale-95">
-                        ${isLast ? "J'ai compris !" : "Suivant"}
-                    </button>
-                </div>
-            `;
-            ouvrirModal(html);
-        };
+    <!-- JAVASCRIPT VANILLA -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
 
-        const nextFlashcardStep = () => {
-            if (currentFlashcardStep < flashcardSteps.length - 1) {
-                currentFlashcardStep++;
-                renderCurrentFlashcard();
-            } else {
-                fermerModal();
-            }
-        };
-
-
-        // --- BASE DE DONNÉES LOCALE (NETTOYÉE) ---
-        const initDB = () => {
-            if (!localStorage.getItem('hvac_settings')) {
-                localStorage.setItem('hvac_settings', JSON.stringify({ isPro: true, companyName: 'Suivi Maintenance CVC', theme: 'blue' }));
-            }
-            if (!localStorage.getItem('hvac_clients')) {
-                localStorage.setItem('hvac_clients', JSON.stringify([]));
-                localStorage.setItem('hvac_equipements', JSON.stringify([]));
-                localStorage.setItem('hvac_interventions', JSON.stringify([]));
-                localStorage.setItem('hvac_relances', JSON.stringify([]));
-            }
-        };
-
-        const getDB = (table) => {
-            const data = localStorage.getItem(`hvac_${table}`);
-            if (data) return JSON.parse(data);
-            if (table === 'settings') return { isPro: true, companyName: 'Suivi Maintenance CVC', theme: 'blue' };
-            return [];
-        };
-        const saveDB = (table, data) => localStorage.setItem(`hvac_${table}`, JSON.stringify(data));
-
-        // --- GESTION DE L'UI GLOBALE ET DES THÈMES ---
-        const updateAppUI = () => {
-            const settings = getDB('settings');
-            const th = themes[settings.theme] || themes['blue'];
-            
-            document.getElementById('company-name-display').innerText = settings.companyName;
-            
-            const header = document.getElementById('main-header');
-            header.classList.remove('bg-blue-600', 'bg-green-600', 'bg-red-600', 'bg-gray-800');
-            header.classList.add(th.bgMain);
-
-            updateNav(currentView);
-
-            if (currentView === 1) renderClients();
-            else if (currentView === 2) renderRelances();
-            else renderDashboard();
-        };
-
-        const updateNav = (activeIndex) => {
-            const btns = document.querySelectorAll('.nav-btn');
-            const settings = getDB('settings');
-            const th = themes[settings.theme] || themes['blue'];
-            
-            btns.forEach((btn, idx) => {
-                btn.className = btn.className.replace(/text-(blue|green|red|gray)-\d+/g, '');
-                if (idx === activeIndex) {
-                    btn.className = `nav-btn flex flex-col items-center ${th.textMain} transition`;
-                } else {
-                    btn.className = `nav-btn flex flex-col items-center text-gray-400 hover:${th.textMain} relative transition`;
-                }
-            });
-        };
-
-        // --- GESTION DE LA MODALE FORMULAIRE ---
-        const overlay = document.getElementById('modal-overlay');
-        const modalContent = document.getElementById('modal-content');
-
-        const ouvrirModal = (html) => {
-            modalContent.innerHTML = html;
-            overlay.classList.remove('hidden');
-            overlay.classList.add('flex');
-            modalContent.classList.add('modal-enter');
-        };
-
-        const fermerModal = () => {
-            overlay.classList.add('hidden');
-            overlay.classList.remove('flex');
-            modalContent.classList.remove('modal-enter');
-        };
-
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) fermerModal();
-        });
-
-
-        // --- FEEDBACK WHATSAPP ---
-        const afficherFeedbackPopup = () => {
-            const settings = getDB('settings');
-            const th = themes[settings.theme] || themes['blue'];
-
-            const html = `
-                <div class="p-4 bg-gray-50 border-b flex justify-between items-center sticky top-0">
-                    <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-comment-dots mr-2 text-gray-500"></i>Votre avis</h3>
-                    <button onclick="fermerModal()" class="text-gray-500 text-2xl px-2">&times;</button>
-                </div>
-                <div class="p-5 flex flex-col gap-4">
-                    <div class="bg-blue-50 text-blue-800 p-3 rounded-lg text-sm border border-blue-100">
-                        <i class="fa-solid fa-lightbulb mr-1 text-blue-500"></i>
-                        Votre retour nous aide à améliorer l'application en permanence.
-                    </div>
-                    
-                    <textarea id="feedback-text" rows="5" class="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-gray-500 transition resize-none text-sm" placeholder="Ex: J'aimerais pouvoir ajouter des photos..."></textarea>
-                    
-                    <button onclick="envoyerFeedback()" class="w-full ${th.bgMain} text-white font-bold py-3.5 rounded-lg mt-2 shadow-md hover:opacity-90 transition flex items-center justify-center gap-2">
-                        <i class="fa-brands fa-whatsapp text-xl"></i> Envoyer via WhatsApp
-                    </button>
-                </div>
-            `;
-            ouvrirModal(html);
-        };
-
-        const envoyerFeedback = () => {
-            const text = document.getElementById('feedback-text').value.trim();
-            const messageBase = "Bonjour, voici mon retour concernant l'application Suivi Maintenance CVC :\n\n";
-            const messageComplet = text !== "" ? (messageBase + text) : (messageBase + "(Je teste l'application !)");
-            
-            const waLink = `https://wa.me/2250506509722?text=${encodeURIComponent(messageComplet)}`;
-            window.open(waLink, '_blank');
-            fermerModal();
-        };
-
-
-        // --- PARAMÈTRES ---
-        const afficherParametres = () => {
-            const settings = getDB('settings');
-            const html = `
-                <div class="p-4 bg-gray-50 border-b flex justify-between items-center sticky top-0">
-                    <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-gear mr-2 text-gray-500"></i>Paramètres</h3>
-                    <button onclick="fermerModal()" class="text-gray-500 text-2xl px-2">&times;</button>
-                </div>
-                <form onsubmit="sauvegarderParametres(event)" class="p-5 flex flex-col gap-5">
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Nom de l'entreprise</label>
-                        <input type="text" id="param-nom" required value="${settings.companyName}" class="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-gray-500 transition">
-                        <p class="text-xs text-gray-400 mt-1">S'affichera dans l'en-tête de l'application.</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-3">Couleur de l'interface</label>
-                        <div class="flex gap-4 justify-around">
-                            <label class="flex flex-col items-center gap-1 cursor-pointer">
-                                <input type="radio" name="param-theme" value="blue" ${settings.theme === 'blue' ? 'checked' : ''} class="peer sr-only">
-                                <div class="w-10 h-10 bg-blue-600 rounded-full border-2 border-transparent peer-checked:border-gray-800 peer-checked:ring-4 peer-checked:ring-blue-100 transition shadow-sm"></div>
-                            </label>
-                            <label class="flex flex-col items-center gap-1 cursor-pointer">
-                                <input type="radio" name="param-theme" value="green" ${settings.theme === 'green' ? 'checked' : ''} class="peer sr-only">
-                                <div class="w-10 h-10 bg-green-600 rounded-full border-2 border-transparent peer-checked:border-gray-800 peer-checked:ring-4 peer-checked:ring-green-100 transition shadow-sm"></div>
-                            </label>
-                            <label class="flex flex-col items-center gap-1 cursor-pointer">
-                                <input type="radio" name="param-theme" value="red" ${settings.theme === 'red' ? 'checked' : ''} class="peer sr-only">
-                                <div class="w-10 h-10 bg-red-600 rounded-full border-2 border-transparent peer-checked:border-gray-800 peer-checked:ring-4 peer-checked:ring-red-100 transition shadow-sm"></div>
-                            </label>
-                            <label class="flex flex-col items-center gap-1 cursor-pointer">
-                                <input type="radio" name="param-theme" value="black" ${settings.theme === 'black' ? 'checked' : ''} class="peer sr-only">
-                                <div class="w-10 h-10 bg-gray-800 rounded-full border-2 border-transparent peer-checked:border-gray-400 peer-checked:ring-4 peer-checked:ring-gray-200 transition shadow-sm"></div>
-                            </label>
-                        </div>
-                    </div>
-                    <button type="submit" class="w-full bg-gray-900 text-white font-bold py-3.5 rounded-lg mt-2 shadow-md hover:bg-black transition">Sauvegarder les modifications</button>
-                </form>
-            `;
-            ouvrirModal(html);
-        };
-
-        const sauvegarderParametres = (e) => {
-            e.preventDefault();
-            const settings = getDB('settings');
-            settings.companyName = document.getElementById('param-nom').value.trim() || 'Suivi Maintenance CVC';
-            settings.theme = document.querySelector('input[name="param-theme"]:checked').value;
-            saveDB('settings', settings);
-            fermerModal();
-            updateAppUI();
-        };
-
-
-        // --- FORMULAIRES MÉTIER (AJOUT) ---
-        const afficherFormClient = () => {
-            const settings = getDB('settings');
-            const th = themes[settings.theme] || themes['blue'];
-
-            const html = `
-                <div class="p-4 bg-gray-50 border-b flex justify-between items-center sticky top-0">
-                    <h3 class="text-lg font-bold text-gray-800">Ajouter un Client</h3>
-                    <button onclick="fermerModal()" class="text-gray-500 text-2xl px-2">&times;</button>
-                </div>
-                <form onsubmit="sauvegarderClient(event)" class="p-5 flex flex-col gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Nom complet / Raison Sociale *</label>
-                        <input type="text" id="cli-nom" required class="w-full border border-gray-300 rounded-lg p-3 bg-white focus:border-gray-500 outline-none" placeholder="Ex: Entreprise S.A">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Téléphone (WhatsApp) *</label>
-                        <input type="tel" id="cli-tel" required class="w-full border border-gray-300 rounded-lg p-3 bg-white focus:border-gray-500 outline-none" placeholder="Ex: 22501020304">
-                        <p class="text-xs text-gray-500 mt-1">Inclure l'indicatif sans le '+' pour WhatsApp.</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Adresse locale *</label>
-                        <input type="text" id="cli-adresse" required class="w-full border border-gray-300 rounded-lg p-3 bg-white outline-none" placeholder="Ex: Plateau, Rue du Commerce">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Catégorie</label>
-                        <select id="cli-type" class="w-full border border-gray-300 rounded-lg p-3 bg-white outline-none">
-                            <option value="B2C">Particulier (B2C)</option>
-                            <option value="B2B">Professionnel (B2B)</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="w-full ${th.bgMain} text-white font-bold py-3 rounded-lg mt-2 shadow-md transition">Enregistrer le client</button>
-                </form>
-            `;
-            ouvrirModal(html);
-        };
-
-        const sauvegarderClient = (e) => {
-            e.preventDefault();
-            const clients = getDB('clients');
-            const nouveauClient = {
-                id: Date.now(),
-                nom: document.getElementById('cli-nom').value.trim(),
-                tel: document.getElementById('cli-tel').value.replace(/\s+/g, ''),
-                adresse: document.getElementById('cli-adresse').value.trim(),
-                type: document.getElementById('cli-type').value
+        // Scroll Reveal avec IntersectionObserver
+        document.addEventListener('DOMContentLoaded', () => {
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.15
             };
-            clients.push(nouveauClient);
-            saveDB('clients', clients);
-            fermerModal();
-            renderClients(); 
-        };
 
-        const afficherFormEquipement = (clientId) => {
-            const settings = getDB('settings');
-            const th = themes[settings.theme] || themes['blue'];
-
-            const html = `
-                <div class="p-4 bg-gray-50 border-b flex justify-between items-center sticky top-0 z-10">
-                    <h3 class="text-lg font-bold text-gray-800">Nouvel Équipement</h3>
-                    <button onclick="fermerModal()" class="text-gray-500 text-2xl px-2">&times;</button>
-                </div>
-                <form onsubmit="sauvegarderEquipement(event, ${clientId})" class="p-5 flex flex-col gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Type d'appareil *</label>
-                        <select id="eq-type" required class="w-full border border-gray-300 rounded-lg p-3 bg-white outline-none">
-                            <option value="Split Mural">Split Mural</option>
-                            <option value="Armoire">Armoire de Climatisation</option>
-                            <option value="Cassette">Cassette</option>
-                            <option value="VRV / DRV">Système VRV / DRV</option>
-                            <option value="Chambre Froide">Chambre Froide</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Marque *</label>
-                        <input type="text" id="eq-marque" required class="w-full border border-gray-300 rounded-lg p-3 bg-white outline-none" placeholder="Ex: Daikin, Carrier, LG...">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Fréquence d'entretien *</label>
-                        <select id="eq-freq" class="w-full border border-gray-300 rounded-lg p-3 bg-white outline-none">
-                            <option value="3">Tous les 3 mois (Froid Industriel)</option>
-                            <option value="6">Tous les 6 mois (Standard B2B)</option>
-                            <option value="12" selected>Tous les 12 mois (Standard B2C)</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="w-full ${th.bgMain} text-white font-bold py-3 rounded-lg mt-2 shadow-md transition">Ajouter l'équipement</button>
-                </form>
-            `;
-            ouvrirModal(html);
-        };
-
-        const sauvegarderEquipement = (e, clientId) => {
-            e.preventDefault();
-            const equipements = getDB('equipements');
-            const nouvelEq = {
-                id: Date.now(),
-                clientId: clientId,
-                type: document.getElementById('eq-type').value,
-                marque: document.getElementById('eq-marque').value.trim(),
-                frequenceMois: parseInt(document.getElementById('eq-freq').value)
-            };
-            equipements.push(nouvelEq);
-            saveDB('equipements', equipements);
-            fermerModal();
-            renderClients(); 
-        };
-
-        // --- FONCTIONNALITÉS CRUD (ÉDITION / SUPPRESSION) ---
-        const afficherModaleEditionClient = (clientId) => {
-            const settings = getDB('settings');
-            const th = themes[settings.theme] || themes['blue'];
-            const clients = getDB('clients');
-            const equipements = getDB('equipements');
-            
-            const client = clients.find(c => c.id === clientId);
-            if (!client) return;
-
-            const clientEquips = equipements.filter(e => e.clientId === clientId);
-
-            let equipsHtml = '';
-            if (clientEquips.length === 0) {
-                equipsHtml = `<p class="text-sm text-gray-400 italic">Aucun équipement enregistré.</p>`;
-            } else {
-                clientEquips.forEach(e => {
-                    equipsHtml += `
-                        <div class="flex justify-between items-center bg-gray-50 border border-gray-200 rounded p-3 mb-2">
-                            <div>
-                                <p class="text-sm font-bold text-gray-700">${e.type}</p>
-                                <p class="text-xs text-gray-500">${e.marque} - Cycle: ${e.frequenceMois}m</p>
-                            </div>
-                            <button type="button" onclick="supprimerEquipement(${e.id}, ${clientId})" class="text-red-500 hover:text-red-700 p-2 active:scale-95 transition" title="Supprimer l'équipement">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
-                        </div>
-                    `;
-                });
-            }
-
-            const html = `
-                <div class="p-4 bg-gray-50 border-b flex justify-between items-center sticky top-0 z-10">
-                    <h3 class="text-lg font-bold text-gray-800">Modifier le Client</h3>
-                    <button onclick="fermerModal()" class="text-gray-500 text-2xl px-2">&times;</button>
-                </div>
-                
-                <div class="p-5 flex flex-col gap-6">
-                    <!-- Formulaire Modification Info Client -->
-                    <form onsubmit="sauvegarderEditionClient(event, ${clientId})" class="flex flex-col gap-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-1">Nom complet / Raison Sociale</label>
-                            <input type="text" id="edit-cli-nom" required value="${client.nom}" class="w-full border border-gray-300 rounded-lg p-3 bg-white focus:border-gray-500 outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-1">Téléphone (WhatsApp)</label>
-                            <input type="tel" id="edit-cli-tel" required value="${client.tel}" class="w-full border border-gray-300 rounded-lg p-3 bg-white focus:border-gray-500 outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-1">Adresse locale</label>
-                            <input type="text" id="edit-cli-adresse" required value="${client.adresse}" class="w-full border border-gray-300 rounded-lg p-3 bg-white outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-1">Catégorie</label>
-                            <select id="edit-cli-type" class="w-full border border-gray-300 rounded-lg p-3 bg-white outline-none">
-                                <option value="B2C" ${client.type === 'B2C' ? 'selected' : ''}>Particulier (B2C)</option>
-                                <option value="B2B" ${client.type === 'B2B' ? 'selected' : ''}>Professionnel (B2B)</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="w-full ${th.bgMain} text-white font-bold py-3 rounded-lg mt-2 shadow-sm transition">Mettre à jour les infos</button>
-                    </form>
-
-                    <hr class="border-gray-200">
-
-                    <!-- Gestion des Équipements -->
-                    <div>
-                        <h4 class="text-sm font-bold text-gray-800 mb-3 uppercase tracking-wide">Équipements associés</h4>
-                        ${equipsHtml}
-                    </div>
-
-                    <hr class="border-gray-200">
-
-                    <!-- Zone de Danger -->
-                    <div>
-                        <button type="button" onclick="supprimerClient(${clientId})" class="w-full bg-red-50 text-red-600 border border-red-200 font-bold py-3 rounded-lg shadow-sm hover:bg-red-100 transition flex justify-center items-center gap-2">
-                            <i class="fa-solid fa-triangle-exclamation"></i> Supprimer ce client
-                        </button>
-                    </div>
-                </div>
-            `;
-            ouvrirModal(html);
-        };
-
-        const sauvegarderEditionClient = (e, clientId) => {
-            e.preventDefault();
-            const clients = getDB('clients');
-            const index = clients.findIndex(c => c.id === clientId);
-            if (index > -1) {
-                clients[index].nom = document.getElementById('edit-cli-nom').value.trim();
-                clients[index].tel = document.getElementById('edit-cli-tel').value.replace(/\s+/g, '');
-                clients[index].adresse = document.getElementById('edit-cli-adresse').value.trim();
-                clients[index].type = document.getElementById('edit-cli-type').value;
-                saveDB('clients', clients);
-                fermerModal();
-                renderClients();
-            }
-        };
-
-        const supprimerEquipement = (equipId, clientId) => {
-            if (!confirm("Voulez-vous vraiment supprimer cet équipement ? Toutes les relances d'entretien liées seront également effacées.")) return;
-            
-            let equipements = getDB('equipements');
-            let relances = getDB('relances');
-            let interventions = getDB('interventions');
-
-            // Suppression en cascade
-            equipements = equipements.filter(e => e.id !== equipId);
-            relances = relances.filter(r => r.equipementId !== equipId);
-            interventions = interventions.filter(i => i.equipementId !== equipId);
-
-            saveDB('equipements', equipements);
-            saveDB('relances', relances);
-            saveDB('interventions', interventions);
-
-            afficherModaleEditionClient(clientId);
-            updateBadge();
-        };
-
-        const supprimerClient = (clientId) => {
-            if (!confirm("ATTENTION : Voulez-vous vraiment supprimer ce client ? Tous ses équipements et relances seront perdus définitivement.")) return;
-            
-            let clients = getDB('clients');
-            let equipements = getDB('equipements');
-            let relances = getDB('relances');
-            let interventions = getDB('interventions');
-
-            const clientEquips = equipements.filter(e => e.clientId === clientId);
-            const equipIds = clientEquips.map(e => e.id);
-
-            relances = relances.filter(r => !equipIds.includes(r.equipementId));
-            interventions = interventions.filter(i => !equipIds.includes(i.equipementId));
-            equipements = equipements.filter(e => e.clientId !== clientId);
-            clients = clients.filter(c => c.id !== clientId);
-
-            saveDB('relances', relances);
-            saveDB('interventions', interventions);
-            saveDB('equipements', equipements);
-            saveDB('clients', clients);
-
-            fermerModal();
-            renderClients();
-            updateBadge();
-        };
-
-
-        // --- MOTEUR DE RÈGLES ---
-        const genererRelance = (equipementId, datePassage) => {
-            const equipements = getDB('equipements');
-            const equipement = equipements.find(e => e.id === equipementId);
-            if (!equipement) return;
-
-            const dateIntervention = new Date(datePassage);
-            dateIntervention.setMonth(dateIntervention.getMonth() + equipement.frequenceMois);
-            
-            const dateRelance = new Date(dateIntervention);
-            dateRelance.setDate(dateRelance.getDate() - 15);
-
-            const relances = getDB('relances');
-            relances.push({
-                id: Date.now(),
-                equipementId: equipementId,
-                dateEcheance: dateIntervention.toISOString().split('T')[0],
-                dateDeclenchement: dateRelance.toISOString().split('T')[0],
-                statut: "En attente"
-            });
-            saveDB('relances', relances);
-            updateBadge();
-        };
-
-
-        // --- VUES PRINCIPALES ---
-        const content = document.getElementById('app-content');
-
-        // --- PAGE D'ACCUEIL CHALEUREUSE & HUBS D'ACTIONS ---
-        const renderDashboard = () => {
-            currentView = 0;
-            updateNav(0);
-            const clients = getDB('clients');
-            const equipements = getDB('equipements');
-            const relances = getDB('relances').filter(r => r.statut === "En attente");
-            const settings = getDB('settings');
-            const th = themes[settings.theme] || themes['blue'];
-
-            // Salutation contextuelle
-            const heure = new Date().getHours();
-            let salutation = "Bonjour";
-            if (heure >= 12 && heure < 18) salutation = "Bon après-midi";
-            else if (heure >= 18 || heure < 5) salutation = "Bonsoir";
-
-            // Date formatée en français
-            const dateOption = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-            const dateFormatee = new Date().toLocaleDateString('fr-FR', dateOption);
-            const dateCapitalisee = dateFormatee.charAt(0).toUpperCase() + dateFormatee.slice(1);
-
-            let html = `
-                <!-- En-tête Chaleureux & Salutation -->
-                <div class="mb-6 bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <span class="text-xs font-bold uppercase tracking-wider text-gray-400 block mb-0.5">
-                                <i class="fa-regular fa-calendar mr-1"></i>${dateCapitalisee}
-                            </span>
-                            <h2 class="text-2xl font-extrabold text-gray-800">${salutation} ! 👋</h2>
-                        </div>
-                        <div class="w-12 h-12 ${th.bgLightest} ${th.textMain} rounded-2xl flex items-center justify-center text-2xl shadow-inner">
-                            <i class="fa-solid fa-screwdriver-wrench"></i>
-                        </div>
-                    </div>
-                    <p class="text-sm text-gray-500 mt-2">Prêt à organiser vos maintenances aujourd'hui ?</p>
-                </div>
-            `;
-
-            // SI LA BASE EST VIDE : Empty State Empathique & Guidé
-            if (clients.length === 0) {
-                html += `
-                    <div class="bg-gradient-to-b from-white to-gray-50 p-6 rounded-2xl border border-gray-200 shadow-sm text-center my-4">
-                        <div class="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl shadow-inner">
-                            <i class="fa-solid fa-toolbox"></i>
-                        </div>
-                        
-                        <h3 class="text-xl font-bold text-gray-800 mb-2">Votre carnet digital est prêt !</h3>
-                        <p class="text-gray-500 text-sm leading-relaxed mb-6 max-w-xs mx-auto">
-                            Commencez par ajouter votre premier client pour planifier automatiquement vos relances d'entretien CVC.
-                        </p>
-
-                        <!-- CTA Principal -->
-                        <button onclick="afficherFormClient()" class="w-full ${th.bgMain} text-white font-bold py-3.5 px-6 rounded-xl shadow-md hover:opacity-95 transition active:scale-95 flex items-center justify-center gap-2 mb-3">
-                            <i class="fa-solid fa-user-plus text-lg"></i>
-                            <span>Ajouter mon premier client</span>
-                        </button>
-
-                        <!-- Bouton Déclencheur Tutoriel Flashcards -->
-                        <button onclick="lancerTutorielFlashcards()" class="text-xs font-semibold ${th.textMain} hover:underline mt-2">
-                            📖 Comment ça marche ?
-                        </button>
-                    </div>
-                `;
-            } else {
-                // SI DES DONNÉES EXISTENT : Cartes de Synthèse (KPIs) + Parc Actif
-                html += `
-                    <!-- Cartes Synthèse Express (KPIs) -->
-                    <div class="grid grid-cols-3 gap-3 mb-6">
-                        <div onclick="renderClients()" class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm text-center cursor-pointer active:scale-95 transition">
-                            <span class="block text-xl font-black text-gray-800">${clients.length}</span>
-                            <span class="text-[11px] font-semibold text-gray-400 uppercase"><i class="fa-solid fa-users mr-1"></i>Clients</span>
-                        </div>
-                        <div onclick="renderDashboard()" class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm text-center cursor-pointer active:scale-95 transition">
-                            <span class="block text-xl font-black ${th.textMain}">${equipements.length}</span>
-                            <span class="text-[11px] font-semibold text-gray-400 uppercase"><i class="fa-solid fa-snowflake mr-1"></i>Appareils</span>
-                        </div>
-                        <div onclick="renderRelances()" class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm text-center cursor-pointer active:scale-95 transition">
-                            <span class="block text-xl font-black ${relances.length > 0 ? 'text-red-500' : 'text-green-500'}">${relances.length}</span>
-                            <span class="text-[11px] font-semibold text-gray-400 uppercase"><i class="fa-brands fa-whatsapp mr-1"></i>Relances</span>
-                        </div>
-                    </div>
-
-                    <!-- En-tête Parc Actif -->
-                    <div class="mb-4 flex justify-between items-center">
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-800">Parc Actif & Passages</h3>
-                            <p class="text-xs text-gray-500">Validez vos entretiens effectués</p>
-                        </div>
-                        <button onclick="afficherFormClient()" class="${th.bgMain} text-white text-xs px-3 py-2 rounded-lg font-semibold shadow-sm flex items-center gap-1 active:scale-95 transition">
-                            <i class="fa-solid fa-plus"></i> Nouveau Client
-                        </button>
-                    </div>
-                `;
-
-                if (equipements.length === 0) {
-                    html += `
-                        <div class="text-center my-6 bg-white p-6 rounded-xl border border-dashed border-gray-300">
-                            <i class="fa-solid fa-wind text-3xl text-gray-300 mb-2"></i>
-                            <p class="text-gray-500 text-sm mb-3">Vos clients n'ont pas encore d'équipement enregistré.</p>
-                            <button onclick="renderClients()" class="${th.bgLight} ${th.textMain} px-4 py-2 rounded-lg text-xs font-bold">
-                                Aller au répertoire des clients
-                            </button>
-                        </div>`;
-                }
-
-                equipements.forEach(eq => {
-                    const client = clients.find(c => c.id === eq.clientId);
-                    if(client) {
-                        html += `
-                            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4">
-                                <div class="flex justify-between items-start mb-2">
-                                    <div>
-                                        <h3 class="font-bold text-base text-gray-800">${client.nom}</h3>
-                                        <p class="text-xs text-gray-500"><i class="fa-solid fa-location-dot w-3 text-center mr-1"></i>${client.adresse}</p>
-                                    </div>
-                                    <span class="${th.bgLightest} ${th.textLight} text-[11px] px-2 py-0.5 rounded font-bold">${eq.type}</span>
-                                </div>
-                                <div class="bg-gray-50 p-2 rounded mt-2 text-xs text-gray-600 mb-3 border border-gray-100 flex justify-between">
-                                    <span><strong>Marque:</strong> ${eq.marque}</span>
-                                    <span><strong>Cycle:</strong> ${eq.frequenceMois} mois</span>
-                                </div>
-                                <div class="flex gap-2">
-                                    <button onclick="cloturerIntervention(${eq.id})" class="w-full bg-[#25D366] text-white py-2.5 rounded-lg text-sm font-bold shadow-sm hover:bg-green-600 transition flex items-center justify-center">
-                                        <i class="fa-solid fa-check-circle mr-2"></i> Valider l'entretien
-                                    </button>
-                                </div>
-                            </div>
-                        `;
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('active');
+                        observer.unobserve(entry.target);
                     }
                 });
-            }
+            }, observerOptions);
 
-            content.innerHTML = html;
-        };
+            document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+        });
 
-        const cloturerIntervention = (equipementId) => {
-            const dateJour = new Date().toISOString().split('T')[0];
-            const interventions = getDB('interventions');
-            
-            interventions.push({
-                id: Date.now(),
-                equipementId: equipementId,
-                datePassage: dateJour,
-                statut: "Terminé",
-                notes: "Entretien préventif standard."
-            });
-            
-            saveDB('interventions', interventions);
-            genererRelance(equipementId, dateJour);
-            
-            alert("✅ Entretien validé ! La date de la prochaine relance a été programmée automatiquement.");
-            renderDashboard();
-        };
+        // Mobile Menu Toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
 
-        const renderClients = () => {
-            currentView = 1;
-            updateNav(1);
-            const clients = getDB('clients');
-            const equipements = getDB('equipements');
-            const settings = getDB('settings');
-            const th = themes[settings.theme] || themes['blue'];
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
 
-            const hintClientDone = localStorage.getItem('hvac_hint_client_done');
-            const showHintClass = !hintClientDone && localStorage.getItem('hvac_onboarding_done') ? '' : 'hidden';
+        // FAQ Accordion
+        document.querySelectorAll('.faq-toggle').forEach(button => {
+            button.addEventListener('click', () => {
+                const content = button.nextElementSibling;
+                const icon = button.querySelector('i');
+                const isExpanded = button.getAttribute('aria-expanded') === 'true';
 
-            let html = `
-                <div class="mb-6 flex justify-between items-center">
-                    <div>
-                        <h2 class="text-2xl font-bold text-gray-800">Répertoire</h2>
-                        <p class="text-sm text-gray-500">${clients.length} client(s) actif(s)</p>
-                    </div>
-                    
-                    <div class="relative">
-                        <button onclick="dismissHint('client'); afficherFormClient()" class="${th.bgMain} text-white text-sm px-3 py-2 rounded-lg shadow-sm font-semibold active:scale-95 transition">
-                            <i class="fa-solid fa-user-plus mr-1"></i> Nouveau
-                        </button>
-                        
-                        <div id="hint-client" class="${showHintClass} absolute top-full right-0 mt-3 w-48 bg-gray-800 text-white text-xs rounded-lg p-3 shadow-xl z-50 animate-pulse transition-opacity text-left">
-                            Appuyez ici pour ajouter votre premier client
-                            <div class="absolute -top-1 right-5 w-3 h-3 bg-gray-800 transform rotate-45"></div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            if (clients.length === 0) {
-                html += `
-                    <div class="flex flex-col items-center justify-center mt-16 text-gray-400">
-                        <i class="fa-solid fa-users-slash text-5xl mb-4 text-gray-300"></i>
-                        <p class="italic text-center text-sm mb-4">Votre répertoire est vide.<br>Commencez par ajouter un client.</p>
-                        <button onclick="afficherFormClient()" class="${th.bgMain} text-white text-xs px-4 py-2.5 rounded-lg font-bold shadow-md">
-                            + Ajouter un client
-                        </button>
-                    </div>`;
-            }
-
-            clients.forEach(c => {
-                const clientEquips = equipements.filter(e => e.clientId === c.id);
-                html += `
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4 overflow-hidden relative">
-                        <div class="absolute top-0 right-0 ${c.type === 'B2B' ? 'bg-purple-500' : 'bg-orange-400'} text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase">
-                            ${c.type}
-                        </div>
-                        
-                        <div class="flex justify-between items-start pr-12">
-                            <h3 class="font-bold text-lg text-gray-800 leading-tight">${c.nom}</h3>
-                            <button onclick="afficherModaleEditionClient(${c.id})" class="text-gray-400 hover:${th.textMain} transition active:scale-90 p-1">
-                                <i class="fa-solid fa-pen"></i>
-                            </button>
-                        </div>
-                        
-                        <div class="mt-2 space-y-1">
-                            <p class="text-sm text-gray-600"><i class="fa-brands fa-whatsapp w-5 text-green-500"></i> <a href="tel:+${c.tel}" class="${th.textMain} font-semibold">${c.tel}</a></p>
-                            <p class="text-sm text-gray-500"><i class="fa-solid fa-location-dot w-5 text-gray-400"></i> ${c.adresse}</p>
-                        </div>
-                        
-                        <div class="mt-4 pt-3 border-t border-dashed border-gray-200">
-                            <h4 class="text-xs font-bold text-gray-400 uppercase mb-2">Parc Matériel (${clientEquips.length})</h4>
-                            <div class="space-y-1 mb-2">
-                                ${clientEquips.map(e => `
-                                    <div class="text-xs bg-gray-50 p-2 rounded flex justify-between items-center border border-gray-100">
-                                        <span class="font-semibold text-gray-700">${e.type} <span class="font-normal text-gray-500">(${e.marque})</span></span> 
-                                        <span class="text-[10px] ${th.bgLightest} ${th.textLight} px-1.5 py-0.5 rounded font-bold"><i class="fa-solid fa-rotate mr-1"></i>${e.frequenceMois}m</span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                            <button onclick="afficherFormEquipement(${c.id})" class="w-full text-sm ${th.textMain} font-semibold py-2 ${th.bgLightest} rounded transition mt-1 active:bg-gray-100">
-                                + Ajouter un équipement
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-
-            content.innerHTML = html;
-        };
-
-        const renderRelances = () => {
-            currentView = 2;
-            updateNav(2);
-            const relances = getDB('relances').filter(r => r.statut === "En attente");
-            const equipements = getDB('equipements');
-            const clients = getDB('clients');
-
-            let html = `
-                <div class="mb-6 flex justify-between items-center">
-                    <h2 class="text-2xl font-bold text-gray-800">Relances WhatsApp</h2>
-                </div>
-                ${relances.length === 0 ? `
-                    <div class="text-center mt-10">
-                        <div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 text-green-500 text-2xl shadow-sm">
-                            <i class="fa-solid fa-check"></i>
-                        </div>
-                        <p class="text-gray-500 font-medium">Vous êtes à jour !</p>
-                        <p class="text-sm text-gray-400 mt-1">Aucune relance en attente.</p>
-                    </div>` 
-                : ''}
-            `;
-
-            relances.forEach(rel => {
-                const eq = equipements.find(e => e.id === rel.equipementId);
-                const client = clients.find(c => c.id === eq.clientId);
-                if(!client || !eq) return;
+                button.setAttribute('aria-expanded', !isExpanded);
+                content.classList.toggle('hidden');
                 
-                let message = "";
-                if(client.type === "B2C") {
-                    message = `Bonjour ${client.nom} ! 👋\n\nVotre technicien vous informe que votre ${eq.type} a besoin de son entretien périodique le ${rel.dateEcheance}.\n\n🦠 Le saviez-vous ? Un filtre non nettoyé accumule des bactéries. Un entretien régulier protège vos poumons et assainit votre intérieur.\n\nSouhaitez-vous fixer un rendez-vous cette semaine ? Répondez OUI ! 🔧`;
+                if (!isExpanded) {
+                    icon.style.transform = 'rotate(180deg)';
                 } else {
-                    message = `Bonjour ${client.nom},\n\nL'entretien préventif de votre équipement ${eq.type} arrive à échéance le ${rel.dateEcheance}.\n\n⚡ Un appareil encrassé consomme jusqu'à 30% d'électricité en plus. Cet entretien permet de diviser le risque de panne par 3 et de réduire votre facture.\n\nPouvons-nous valider notre passage ? 📅`;
+                    icon.style.transform = 'rotate(0deg)';
                 }
-
-                const waLink = `https://wa.me/${client.tel}?text=${encodeURIComponent(message)}`;
-
-                html += `
-                    <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-l-green-500 mb-4 border-y border-r border-gray-100">
-                        <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <h3 class="font-bold text-gray-800">${client.nom}</h3>
-                                <p class="text-xs text-gray-500">${eq.type} (${eq.marque})</p>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-[10px] uppercase font-bold text-gray-400 block mb-0.5">Échéance</span>
-                                <span class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded font-bold">${rel.dateEcheance}</span>
-                            </div>
-                        </div>
-                        <a href="${waLink}" target="_blank" onclick="marquerRelanceFaite(${rel.id})" class="mt-3 block w-full text-center bg-[#25D366] text-white py-2.5 rounded-lg font-bold shadow-md hover:bg-green-600 transition flex items-center justify-center">
-                            <i class="fa-brands fa-whatsapp text-lg mr-2"></i> Envoyer le message
-                        </a>
-                    </div>
-                `;
             });
+        });
 
-            content.innerHTML = html;
-        };
+        // Modal Management
+        const modal = document.getElementById('bookingModal');
+        const bookingForm = document.getElementById('bookingForm');
+        const successMessage = document.getElementById('successMessage');
 
-        const marquerRelanceFaite = (relanceId) => {
-            const relances = getDB('relances');
-            const index = relances.findIndex(r => r.id === relanceId);
-            if (index > -1) {
-                relances[index].statut = "Envoyé";
-                saveDB('relances', relances);
-                setTimeout(() => {
-                    renderRelances();
-                    updateBadge();
-                }, 1000); 
-            }
-        };
+        function openModal() {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
 
-        const updateBadge = () => {
-            const pending = getDB('relances').filter(r => r.statut === "En attente").length;
-            const badge = document.getElementById('badge-relances');
-            if (pending > 0) {
-                badge.innerText = pending;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
-        };
-
-        // --- INITIALISATION ---
-        window.onload = () => {
-            initDB();
-            updateAppUI(); 
-            updateBadge();
+        function closeModal() {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = 'auto';
+            // Reset state
             setTimeout(() => {
-                initOnboarding();
+                bookingForm.classList.remove('hidden');
+                successMessage.classList.add('hidden');
+                bookingForm.reset();
             }, 300);
-        };
+        }
 
+        // Close Modal on outside click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        // Form Handler
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            bookingForm.classList.add('hidden');
+            successMessage.classList.remove('hidden');
+        }
     </script>
 </body>
 </html>
